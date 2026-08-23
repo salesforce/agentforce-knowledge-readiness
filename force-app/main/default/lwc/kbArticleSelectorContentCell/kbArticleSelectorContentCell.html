@@ -1,0 +1,13 @@
+<template>
+    <div class="slds-cell-wrap cell-wrapper">
+        <div class={textClass}>{value}</div>
+        <template lwc:if={showToggle}>
+            <button
+                class="slds-button slds-button_reset toggle-button"
+                type="button"
+                onclick={handleToggle}>
+                {toggleLabel}
+            </button>
+        </template>
+    </div>
+</template>

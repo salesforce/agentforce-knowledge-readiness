@@ -1,0 +1,48 @@
+<template>
+    <div class="slds-box slds-box_small distribution-card">
+        <h3 class="slds-text-title_caps slds-m-bottom_medium">Article Distribution</h3>
+
+        <template lwc:if={hasData}>
+            <div class="bar-chart">
+                <!-- Ready -->
+                <div class="bar-row">
+                    <div class="bar-head">
+                        <span class="bar-label">Ready</span>
+                        <span class="bar-value">{readyCount} ({readyPercent}%)</span>
+                    </div>
+                    <div class="bar-track">
+                        <div class="bar-fill bar-ready" style={readyBarStyle}></div>
+                    </div>
+                </div>
+
+                <!-- Needs Work -->
+                <div class="bar-row">
+                    <div class="bar-head">
+                        <span class="bar-label">Needs Work</span>
+                        <span class="bar-value">{needsWorkCount} ({needsWorkPercent}%)</span>
+                    </div>
+                    <div class="bar-track">
+                        <div class="bar-fill bar-needs-work" style={needsWorkBarStyle}></div>
+                    </div>
+                </div>
+
+                <!-- Not Ready -->
+                <div class="bar-row">
+                    <div class="bar-head">
+                        <span class="bar-label">Not Ready</span>
+                        <span class="bar-value">{notReadyCount} ({notReadyPercent}%)</span>
+                    </div>
+                    <div class="bar-track">
+                        <div class="bar-fill bar-not-ready" style={notReadyBarStyle}></div>
+                    </div>
+                </div>
+            </div>
+        </template>
+
+        <template lwc:else>
+            <p class="slds-text-body_small slds-text-color_weak slds-p-vertical_medium slds-text-align_center">
+                No article distribution to show yet.
+            </p>
+        </template>
+    </div>
+</template>

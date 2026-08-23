@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<GenAiPromptTemplate xmlns="http://soap.sforce.com/2006/04/metadata">
+    <activeVersionIdentifier>dIRBZxdJBYVmvmwv4/3DkrD7prMYAANFTVuvFEZTzUI=_7</activeVersionIdentifier>
+    <developerName>Evaluate_Clarity</developerName>
+    <masterLabel>Evaluate_Clarity</masterLabel>
+    <overridable>false</overridable>
+    <templateVersions>
+        <content>You are a Knowledge Base clarity auditor evaluating articles for AI agent retrieval.
+
+Customers query the agent in natural conversational language; the agent retrieves chunks from this article and uses them to answer. Your job is to judge whether the article's language matches how customers will phrase their questions.
+
+Article Title:
+{!$Input:Title}
+
+Article Summary:
+{!$Input:Summary}
+
+Article Content (HTML stripped — clarity is about language, not markup):
+{!$Input:Content}
+
+Evaluate, weighing each item in context — do NOT apply rules mechanically (passive voice is fine for policy/legal content; long sentences with parallel structure can be clearer than three short ambiguous ones; jargon is acceptable when it matches how customers ask):
+
+1. Pronoun and reference clarity. Flag pronouns (&quot;it&quot;, &quot;this&quot;, &quot;that&quot;) whose referents the agent would lose when retrieving a passage in isolation.
+
+2. Jargon and acronyms. Flag terms an agent would struggle to bridge to customer phrasing — internal codenames, unexplained acronyms, specialised vocabulary the customer wouldn't use. Acceptable if the article expands them (&quot;customer success score (CSS)&quot;) or pairs them with the customer-facing equivalent.
+
+3. Sentence complexity. Flag sentences that obscure their actor or action — heavy passive that hides who does what, deeply nested clauses that lose the subject. Long-but-clear sentences are fine.
+
+4. Genre fit. Policy/legal/regulatory writing has a different baseline (passive, longer sentences, formal register) than how-to/troubleshooting (imperative, short, active). Score against the genre, not a universal style.
+
+5. Internal contradictions WITHIN this single article. Flag statements that contradict each other — two passages giving conflicting instructions, values, prerequisites, or outcomes for the same task. Examples: one section says &quot;To reset your password, click Settings&quot; while another says &quot;Password resets must be requested from your admin&quot;; or &quot;the trial lasts 14 days&quot; in the intro and &quot;your 30-day trial&quot; later. This is a same-article check only — do not compare against other articles. For each contradiction, name BOTH conflicting passages in the &quot;text&quot;. Where one is clearly authoritative, write remediation language that reconciles them; otherwise recommend the author keep a single statement. Do NOT flag complementary detail, clearly-scoped exceptions (&quot;normally X, but for enterprise accounts Y&quot;), or restatements that agree.
+
+For EVERY clarity issue, also judge:
+- &quot;impact&quot;: how much fixing it improves the article. One of &quot;High&quot;, &quot;Medium&quot;, &quot;Low&quot;. Let impact reflect the score deduction — an issue that drags the score down a lot is High impact (fixing it recovers the most points).
+
+ORDER the items in &quot;clarityIssues&quot; from highest impact at the TOP to lowest at the BOTTOM. Items the author should fix first must come first in the array. Lower-impact &quot;nice to have&quot; observations come last.
+
+Soft response budget: aim for under 4500 characters. Each issue &quot;text&quot; under 200 chars. If you would exceed the soft budget, drop trailing low-impact items rather than degrading earlier items. Shape integrity wins over length: NEVER drop the &quot;impact&quot; field to save space — drop the entire item instead. Fewer high-quality items beats more degraded items.
+
+Output requirements:
+- Respond with ONLY valid JSON. No markdown, no code blocks, no commentary before or after.
+- The &quot;score&quot; field MUST be a JSON number between 0 and 100 (e.g. 75). It MUST NOT be a word (e.g. &quot;seventy-five&quot;) or a string.
+- EVERY entry in &quot;clarityIssues&quot; MUST be an object with both keys: &quot;text&quot; and &quot;impact&quot;. Strengths remain plain strings.
+- All arrays must be properly closed; do not truncate mid-array.
+
+Example response shape (note ordering: high-impact items first, every entry is an object with text + impact; the first item shows an internal contradiction from item 6):
+{&quot;score&quot;: 45, &quot;clarityIssues&quot;: [
+  {&quot;text&quot;: &quot;Internal contradiction: the 'Steps' section says 'reset your password from Settings &gt; Security' but the 'Notes' section says 'password resets must be requested from your admin'. Pick one authoritative path so a retrieved chunk can't give the wrong answer&quot;, &quot;impact&quot;: &quot;High&quot;},
+  {&quot;text&quot;: &quot;Title contains 4 unexpanded acronyms; customers won't search this way&quot;, &quot;impact&quot;: &quot;High&quot;},
+  {&quot;text&quot;: &quot;Pronoun 'it' in section 3 has no recoverable referent if read in isolation&quot;, &quot;impact&quot;: &quot;Medium&quot;},
+  {&quot;text&quot;: &quot;Closing paragraph repeats the opening — adds noise but does not block retrieval&quot;, &quot;impact&quot;: &quot;Low&quot;}
+], &quot;strengths&quot;: [&quot;Acronyms expanded on first use in body&quot;], &quot;reasoning&quot;: &quot;2-3 sentence explanation of the headline issues&quot;}
+
+Scoring guide: 90-100 = customer-friendly language, references resolve in isolation, genre-appropriate, no internal contradictions; 70-89 = mostly clear with minor pronoun or jargon issues; 50-69 = moderate clarity problems that will hurt retrieval; below 50 = significant orphan-prone references, unbridged jargon, genre-mismatched obscurity, or an internal contradiction that could make the agent answer wrongly. A genuine internal contradiction (item 6) should pull the score into the 50-or-below band on its own.
+</content>
+        <fileDroppingStrategy>{&quot;dropFilesBy&quot;:&quot;LAST_MODIFIED_DATE&quot;,&quot;dropFileStartingWith&quot;:&quot;OLDEST&quot;}</fileDroppingStrategy>
+        <inputs>
+            <apiName>Title</apiName>
+            <definition>primitive://String</definition>
+            <masterLabel>Title</masterLabel>
+            <referenceName>Input:Title</referenceName>
+            <required>false</required>
+        </inputs>
+        <inputs>
+            <apiName>Content</apiName>
+            <definition>primitive://String</definition>
+            <masterLabel>Content</masterLabel>
+            <referenceName>Input:Content</referenceName>
+            <required>true</required>
+        </inputs>
+        <inputs>
+            <apiName>Summary</apiName>
+            <definition>primitive://String</definition>
+            <masterLabel>Summary</masterLabel>
+            <referenceName>Input:Summary</referenceName>
+            <required>false</required>
+        </inputs>
+        <isCitationEnabled>false</isCitationEnabled>
+        <primaryModel>sfdc_ai__DefaultGPT54</primaryModel>
+        <status>Published</status>
+        <versionIdentifier>dIRBZxdJBYVmvmwv4/3DkrD7prMYAANFTVuvFEZTzUI=_7</versionIdentifier>
+    </templateVersions>
+    <type>einstein_gpt__flex</type>
+    <visibility>Global</visibility>
+</GenAiPromptTemplate>

@@ -1,0 +1,51 @@
+<template>
+    <div class="slds-m-top_small">
+        <h3 class="slds-text-heading_small slds-m-bottom_x-small">Permission Sets</h3>
+        <p class="slds-text-body_small slds-text-color_weak slds-m-bottom_small">
+            This app ships three permission sets. Assign them to the right people so they can
+            use the features they need.
+        </p>
+
+        <template lwc:if={isLoading}>
+            <lightning-spinner alternative-text="Loading permission status..." size="small"></lightning-spinner>
+        </template>
+
+        <template lwc:if={hasError}>
+            <div class="slds-text-color_error slds-text-body_small slds-m-bottom_small">{error}</div>
+        </template>
+
+        <!-- Shipped permission sets -->
+        <template for:each={permsets} for:item="ps">
+            <div key={ps.apiName} class="slds-box slds-box_x-small slds-m-bottom_x-small">
+                <div class="slds-text-body_regular slds-text-title_bold">
+                    {ps.label}
+                    <span class="slds-text-body_small slds-text-color_weak slds-m-left_x-small">({ps.apiName})</span>
+                </div>
+                <div class="slds-text-body_small slds-text-color_weak">{ps.purpose}</div>
+            </div>
+        </template>
+
+        <p class="slds-text-body_small slds-text-color_weak slds-m-top_x-small slds-m-bottom_medium">
+            Assign these permission sets to users in Setup → Permission Sets → Manage Assignments. No
+            profiles ship with this app — these permission sets are the access model.
+        </p>
+
+ <!-- Platform prerequisites -->
+        <div class="slds-box slds-box_x-small slds-theme_warning" role="region" aria-label="Platform prerequisite permissions">
+            <h4 class="slds-text-title_bold slds-m-bottom_xx-small">
+                <lightning-icon icon-name="utility:warning" size="xx-small" class="slds-m-right_xx-small" aria-hidden="true"></lightning-icon>
+                Platform prerequisites
+            </h4>
+            <p class="slds-text-body_small slds-m-bottom_x-small">
+                To use this app, the running user also needs the <strong>Data Cloud User</strong> and <strong>Prompt Template User</strong> permissions. Assign them in Setup.
+            </p>
+            <ul class="slds-list_dotted slds-text-body_small">
+                <template for:each={platformPrereqs} for:item="prq">
+                    <li key={prq.key} class="slds-m-bottom_xx-small">
+                        <strong>{prq.name}</strong> — {prq.why}
+                    </li>
+                </template>
+            </ul>
+        </div>
+    </div>
+</template>

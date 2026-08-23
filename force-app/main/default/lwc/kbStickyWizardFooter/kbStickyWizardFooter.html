@@ -1,0 +1,30 @@
+<template>
+    <div class="sticky-footer slds-p-around_medium slds-theme_default">
+ <!--: unsaved-changes status on its own line above the buttons,
+             right-aligned over the primary CTA — so it never crowds the Save
+             button horizontally in the narrow footer. Hidden when the step is
+             clean (showDirtyBadge=false), so the button row stands alone. -->
+        <template lwc:if={showDirtyBadge}>
+            <div class="slds-grid slds-grid_align-end slds-m-bottom_x-small">
+                <span class="dirty-badge slds-text-body_small slds-text-color_weak">
+                    <span class="dirty-dot" aria-hidden="true"></span>Unsaved changes
+                </span>
+            </div>
+        </template>
+        <div class="slds-grid slds-grid_align-spread slds-grid_vertical-align-center">
+            <lightning-button
+                label="Previous"
+                variant="neutral"
+                onclick={handlePrevious}
+                disabled={isPreviousDisabled}>
+            </lightning-button>
+            <lightning-button
+                label={primaryLabel}
+                variant={primaryVariant}
+                icon-name={primaryIconName}
+                onclick={handlePrimary}
+                disabled={isPrimaryDisabled}>
+            </lightning-button>
+        </div>
+    </div>
+</template>

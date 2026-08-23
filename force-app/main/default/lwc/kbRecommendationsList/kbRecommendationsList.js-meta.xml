@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<LightningComponentBundle xmlns="http://soap.sforce.com/2006/04/metadata">
+    <apiVersion>66.0</apiVersion>
+    <isExposed>false</isExposed>
+    <masterLabel>KB Recommendations List</masterLabel>
+    <description>Presentational list of open recommendations (AI-fixable + needs-human-review) for a single article, used by the Knowledge Assessment record-page panel.</description>
+</LightningComponentBundle>

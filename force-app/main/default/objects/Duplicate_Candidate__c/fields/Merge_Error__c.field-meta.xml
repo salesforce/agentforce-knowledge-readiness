@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Merge_Error__c</fullName>
+    <description>Populated when an approved merge fails (Status = Error): the actionable reason, e.g. a newer draft exists (re-run the assessment), missing field-level security, or missing Knowledge article-management permission. Cleared/overwritten on the next merge attempt. Surfaced on the Duplicates queue so the failure is visible rather than only on the async job.</description>
+    <externalId>false</externalId>
+    <label>Merge Error</label>
+    <length>1024</length>
+    <type>LongTextArea</type>
+    <visibleLines>3</visibleLines>
+</CustomField>

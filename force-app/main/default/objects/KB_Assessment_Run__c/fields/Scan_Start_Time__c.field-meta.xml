@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Scan_Start_Time__c</fullName>
+    <description>Timestamp when the assessment scan was initiated.</description>
+    <externalId>false</externalId>
+    <inlineHelpText>When this assessment run was started.</inlineHelpText>
+    <label>Scan Start Time</label>
+    <required>false</required>
+    <trackTrending>false</trackTrending>
+    <type>DateTime</type>
+</CustomField>

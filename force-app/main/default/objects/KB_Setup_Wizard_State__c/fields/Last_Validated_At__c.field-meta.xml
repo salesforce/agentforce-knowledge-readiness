@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Last_Validated_At__c</fullName>
+    <description>Timestamp of the latest setup validation run.</description>
+    <externalId>false</externalId>
+    <label>Last Validated At</label>
+    <required>false</required>
+    <trackTrending>false</trackTrending>
+    <type>DateTime</type>
+</CustomField>

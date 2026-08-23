@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Sync_Threshold__c</fullName>
+    <defaultValue>10</defaultValue>
+    <description>Routing: article counts at or below this run synchronously in-request. Default 10 keeps LWC wait under browser timeout.</description>
+    <externalId>false</externalId>
+    <label>Sync Threshold (articles)</label>
+    <precision>5</precision>
+    <required>false</required>
+    <scale>0</scale>
+    <trackTrending>false</trackTrending>
+    <type>Number</type>
+    <unique>false</unique>
+</CustomField>

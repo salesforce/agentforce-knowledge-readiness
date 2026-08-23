@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<GenAiPromptTemplate xmlns="http://soap.sforce.com/2006/04/metadata">
+    <activeVersionIdentifier>dIRBZxdJBYVmvmwv4/3DkrD7prMYAANFTVuvFEZTzUI=_1</activeVersionIdentifier>
+    <developerName>Published_Anomaly_Evaluator</developerName>
+    <masterLabel>Published_Anomaly_Evaluator</masterLabel>
+    <overridable>false</overridable>
+    <templateVersions>
+        <content>You are a Knowledge Base auditor. Compare two published articles and determine if they represent a duplicate, contradiction, or are legitimately distinct articles.
+
+- Duplicate: Both articles resolve the same problem with the same solution, even if worded differently
+- Contradiction: Both articles address the same topic but provide conflicting instructions, facts, or procedures
+- Overlap: Articles are NOT anomalies if they cover related but distinct topics
+
+Article A:
+{!$Input:articleAText}
+
+Article B:
+{!$Input:articleBText}
+
+Respond with ONLY valid JSON, no markdown formatting, no code blocks. Use this exact format:
+{&quot;isAnomaly&quot;: true, &quot;anomalyType&quot;: &quot;Duplicate or Contradiction or Overlap&quot;, &quot;reasoning&quot;: &quot;2-3 sentence explanation of the specific conflict&quot;}
+
+If the articles are legitimately distinct, return:
+{&quot;isAnomaly&quot;: false, &quot;anomalyType&quot;: null, &quot;reasoning&quot;: &quot;Brief explanation of why they are distinct&quot;}
+
+</content>
+        <inputs>
+            <apiName>articleAText</apiName>
+            <definition>primitive://String</definition>
+            <masterLabel>articleAText</masterLabel>
+            <referenceName>Input:articleAText</referenceName>
+            <required>true</required>
+        </inputs>
+        <inputs>
+            <apiName>articleBText</apiName>
+            <definition>primitive://String</definition>
+            <masterLabel>articleBText</masterLabel>
+            <referenceName>Input:articleBText</referenceName>
+            <required>true</required>
+        </inputs>
+        <primaryModel>testTemp0_CM_12l_OKM89276f35</primaryModel>
+        <status>Published</status>
+        <versionIdentifier>dIRBZxdJBYVmvmwv4/3DkrD7prMYAANFTVuvFEZTzUI=_1</versionIdentifier>
+    </templateVersions>
+    <type>einstein_gpt__flex</type>
+    <visibility>Global</visibility>
+</GenAiPromptTemplate>

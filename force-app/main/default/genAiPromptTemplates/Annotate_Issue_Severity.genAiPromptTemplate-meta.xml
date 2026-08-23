@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<GenAiPromptTemplate xmlns="http://soap.sforce.com/2006/04/metadata">
+    <activeVersionIdentifier>4ZbPccRwyDMy6t627kK3R7eYaTs+eUXP+TBd82JbnSU=_21</activeVersionIdentifier>
+    <developerName>Annotate_Issue_Severity</developerName>
+    <masterLabel>Annotate_Issue_Severity</masterLabel>
+    <overridable>false</overridable>
+    <templateVersions>
+        <content>You are a Knowledge Base remediation triager. You receive a JSON payload describing an article under review, an optional counterpart article (flagged as duplicate, overlap, or contradiction), a list of strengths the article already has, and a list of issues. Your job is to judge, for each issue, the impact of fixing it WITHOUT eroding the listed strengths.
+
+Payload JSON (parse and use):
+{!$Input:Payload}
+
+The payload has this shape:
+{
+  &quot;article&quot;: { &quot;title&quot;: &quot;...&quot;, &quot;summary&quot;: &quot;...&quot;, &quot;content&quot;: &quot;...&quot; },
+  &quot;counterpart&quot;: { &quot;title&quot;: &quot;...&quot;, &quot;summary&quot;: &quot;...&quot;, &quot;content&quot;: &quot;...&quot; } | null,
+  &quot;strengths&quot;: [&quot;...&quot;, &quot;...&quot;],
+  &quot;issues&quot;: [{ &quot;index&quot;: 0, &quot;text&quot;: &quot;...&quot; }, { &quot;index&quot;: 1, &quot;text&quot;: &quot;...&quot; }]
+}
+
+The &quot;article.content&quot; field is the full body composed from the customer&apos;s configured content fields (FAQ_Answer__c, KCSArticle_Resolution__c, etc.) — NOT just the summary. Use it to ground your severity judgment in what the article actually says.
+
+For EACH issue in &quot;issues&quot;, return:
+- &quot;index&quot;: matching the input index (integer).
+- &quot;impact&quot;: how much fixing this issue improves the article&apos;s usefulness for AI agents and customers. One of &quot;High&quot;, &quot;Medium&quot;, &quot;Low&quot;.
+
+Guidelines:
+- For duplicates / overlaps / contradictions, weigh how much resolving the relationship clarifies the KB. A near-perfect duplicate of a high-traffic article is usually High impact.
+- If &quot;counterpart&quot; is null, treat the issue as standalone and ignore the duplicate context.
+- If a fix would put a listed strength at risk (e.g. &quot;remove the FAQ section&quot; when &quot;clear FAQ structure&quot; is a strength), weigh that preserving strengths is more important than aggressively fixing the issue.
+
+IMPORTANT: Keep the entire JSON response under 2000 characters. Respond with ONLY valid JSON, no markdown, no commentary. Output exactly one entry per input issue, in the same order.
+
+Example response shape:
+{&quot;annotations&quot;: [{&quot;index&quot;: 0, &quot;impact&quot;: &quot;High&quot;}, {&quot;index&quot;: 1, &quot;impact&quot;: &quot;Low&quot;}]}
+</content>
+        <fileDroppingStrategy>{&quot;dropFilesBy&quot;:&quot;LAST_MODIFIED_DATE&quot;,&quot;dropFileStartingWith&quot;:&quot;OLDEST&quot;}</fileDroppingStrategy>
+        <inputs>
+            <apiName>Payload</apiName>
+            <definition>primitive://String</definition>
+            <masterLabel>Payload</masterLabel>
+            <referenceName>Input:Payload</referenceName>
+            <required>true</required>
+        </inputs>
+        <isCitationEnabled>false</isCitationEnabled>
+        <primaryModel>sfdc_ai__DefaultGPT54</primaryModel>
+        <status>Published</status>
+        <versionIdentifier>4ZbPccRwyDMy6t627kK3R7eYaTs+eUXP+TBd82JbnSU=_21</versionIdentifier>
+    </templateVersions>
+    <type>einstein_gpt__flex</type>
+    <visibility>Global</visibility>
+</GenAiPromptTemplate>

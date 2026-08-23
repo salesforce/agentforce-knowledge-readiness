@@ -1,0 +1,68 @@
+/*
+ * kbImprovementsInbox styles
+ * All inline styles previously in kbImprovementsInbox.html have been moved here
+ * to keep templates clean and respect SLDS hook usage.
+ */
+
+/* Soft-rounded action bar surrounding bulk actions */
+.kb-action-bar {
+    border-radius: 4px;
+}
+
+/* Muted icon color for empty/empty-filter states */
+.kb-icon-muted {
+    --slds-c-icon-color-foreground: var(--slds-g-color-neutral-base-50, #b0b0b0);
+}
+
+/* Prevent badges and inline links from wrapping in the accordion actions row */
+.kb-badge-nowrap {
+    white-space: nowrap;
+}
+
+.kb-link-nowrap {
+    white-space: nowrap;
+}
+
+/* protect the action buttons' width. The accordion header is a flex row
+ * [title][actions]; without this the actions span shrinks to make room for a
+ * long title, compressing the button group until "Fix Issues"/"View Article"/
+ * "Dismiss Issues" wrap onto two lines. flex-shrink:0 makes the title yield
+ * (wrap) instead; white-space:nowrap is belt-and-braces against label wrap. */
+.kb-actions-slot {
+    flex-shrink: 0;
+    white-space: nowrap;
+}
+
+/* Compact column header above the recommendation table */
+.kb-rec-header {
+    font-size: 0.7rem;
+}
+
+/* Temporary highlight for deep-linked recommendation row.
+ * --slds-g-color-warning-container-1 is the SLDS2 surface-warning hook;
+ * the literal fallback covers SLDS1 and any token churn.
+ */
+.kb-highlight-row {
+    background-color: var(--slds-g-color-warning-container-1, #fef6e8);
+    transition: background-color 0.5s ease-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .kb-highlight-row {
+        transition: none;
+    }
+}
+
+/* each article section is a flex row [checkbox][accordion-section].
+ * The section flexes to fill the remaining width; the checkbox column is
+ * vertically aligned to the accordion's header line. The SLDS accordion
+ * summary button has 0.75rem vertical padding and a ~1.25rem line-height, so
+ * the checkbox is nudged down to sit centred on the title/chevron line. */
+.kb-section-row .slds-col {
+    min-width: 0; /* allow the accordion section to shrink/wrap correctly */
+}
+.kb-section-checkbox {
+    flex: 0 0 auto;
+    /* Align with the accordion header title/chevron line. */
+    margin-top: 1.25rem;
+}

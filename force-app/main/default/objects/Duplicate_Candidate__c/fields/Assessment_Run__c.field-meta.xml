@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Assessment_Run__c</fullName>
+    <description>Assessment run that produced this candidate record. Master-detail: the candidate is owned/visible via its run, and cascade-deletes with it.</description>
+    <label>Assessment Run</label>
+    <referenceTo>KB_Assessment_Run__c</referenceTo>
+    <relationshipLabel>Duplicate Candidates</relationshipLabel>
+    <relationshipName>Duplicate_Candidates</relationshipName>
+    <relationshipOrder>0</relationshipOrder>
+    <reparentableMasterDetail>false</reparentableMasterDetail>
+    <trackTrending>false</trackTrending>
+    <type>MasterDetail</type>
+    <writeRequiresMasterRead>false</writeRequiresMasterRead>
+</CustomField>

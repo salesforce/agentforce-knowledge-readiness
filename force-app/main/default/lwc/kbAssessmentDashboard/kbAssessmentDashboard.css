@@ -1,0 +1,121 @@
+:host {
+    display: block;
+}
+
+.slds-illustration {
+    padding: 2rem;
+}
+
+/* Highlights header— keep the run name from squeezing the status
+   badge off-row; the heading truncates instead. */
+.assessment-highlights-headline h2 {
+    min-width: 0;
+}
+
+/* Summary cards row— equal-height cards. The grid columns already
+   stretch to the tallest card (the score gauge), but a percentage height
+   (height:100%) doesn't resolve reliably through a flex-stretched item, so the
+   shorter cards stayed at content height. Fix with flex all the way down: make
+   each column a vertical flex container and let its single child custom element
+   grow to fill the column. The children then flex their inner card to fill the
+   host (see each child's :host/card CSS). Stays fully responsive — columns still
+   reflow 3-up / 2-up / stacked by breakpoint, no fixed dimensions. */
+.summary-cards-row > .slds-col {
+    display: flex;
+    flex-direction: column;
+}
+
+.summary-cards-row > .slds-col > c-kb-run-details-panel,
+.summary-cards-row > .slds-col > c-kb-score-distribution-chart,
+.summary-cards-row > .slds-col > c-kb-overall-score-card {
+    flex: 1 1 auto;
+}
+
+/* Tier badges */
+.tier-row {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.tier-badge {
+    font-size: 0.75rem;
+    font-weight: bold;
+    padding: 0.25rem 0.625rem;
+    border-radius: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+}
+
+.tier-maturity {
+    background: #e8f0fe;
+    color: #0176d3;
+}
+
+.tier-easy {
+    background: #e6f4ea;
+    color: #2e844a;
+}
+
+.tier-medium {
+    background: #fef3e0;
+    color: #8c4b02;
+}
+
+.tier-hard {
+    background: #fce4e4;
+    color: #c23934;
+}
+
+.tier-llm {
+    background: #f3f0ff;
+    color: #7b61ff;
+}
+
+/* Dimension overview */
+.dim-overview {
+    background: #fafafa;
+}
+
+.dim-row-col {
+    padding-right: 0.75rem;
+}
+
+.dim-row {
+    padding: 0.5rem 0;
+}
+
+.dim-row-header {
+    display: flex;
+    align-items: center;
+    gap: 0.375rem;
+    margin-bottom: 0.375rem;
+}
+
+.dim-row-label {
+    flex: 1;
+    font-size: 0.8rem;
+    color: #3e3e3c;
+    font-weight: 500;
+}
+
+/* dimension scores render as filled pills (not bare colored text) so the
+   amber "needs work" tier reads as a distinct amber chip rather than amber text
+   that's easy to confuse with the red "bad" text. Dark text on the amber fill
+   (#3d2400 on #fe9339 = 6.5:1) clears AA; green/red keep white text. */
+.dim-score {
+    font-weight: bold;
+    font-size: 0.8125rem;
+    min-width: 28px;
+    text-align: center;
+    display: inline-block;
+    padding: 0.0625rem 0.5rem;
+    border-radius: 1rem;
+    color: #fff;
+}
+
+.score-good { background: #2e844a; color: #fff; }
+.score-warn { background: #fe9339; color: #3d2400; }
+.score-bad  { background: #c23934; color: #fff; }
+.score-na   { background: transparent; color: #6b7280; font-style: italic; }

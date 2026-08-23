@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<GenAiPromptTemplate xmlns="http://soap.sforce.com/2006/04/metadata">
+    <activeVersionIdentifier>dIRBZxdJBYVmvmwv4/3DkrD7prMYAANFTVuvFEZTzUI=_1</activeVersionIdentifier>
+    <developerName>Triage_Duplicate_Candidates</developerName>
+    <masterLabel>Triage_Duplicate_Candidates</masterLabel>
+    <overridable>false</overridable>
+    <templateVersions>
+        <content>You are a triage router for Knowledge Base quality control. Compare the Target Article against the list of Candidate Articles. Based on the titles and summaries, identify up to 3 candidates that are most likely to be:
+
+1. DUPLICATES: Resolving the exact same problem with the same approach
+2. CONTRADICTIONS: Addressing the same topic but with DIFFERENT instructions, procedures, or facts (e.g., different ports, different contact teams, different costs, different approval processes)
+
+IMPORTANT: Do NOT only look for duplicates. Contradictions are the most dangerous anomaly — two articles giving conflicting advice on the same topic. A candidate that covers the same topic but describes a DIFFERENT process is a top priority to flag.
+
+Target Article:
+Title: {!$Input:TargetTitle}
+Summary: {!$Input:TargetSummary}
+
+Candidates:
+{!$Input:CandidateList}
+
+If no candidates are sufficiently similar or contradictory, return {&quot;top_candidates&quot;: []}
+
+Output strictly as JSON, no markdown, no code blocks:
+{&quot;top_candidates&quot;: [0, 3, 7]}
+
+Where the numbers are the positional indexes of the candidates from the list above. Include both duplicates AND contradictions in your selection.
+
+</content>
+        <inputs>
+            <apiName>TargetTitle</apiName>
+            <definition>primitive://String</definition>
+            <masterLabel>TargetTitle</masterLabel>
+            <referenceName>Input:TargetTitle</referenceName>
+            <required>true</required>
+        </inputs>
+        <inputs>
+            <apiName>TargetSummary</apiName>
+            <definition>primitive://String</definition>
+            <masterLabel>TargetSummary</masterLabel>
+            <referenceName>Input:TargetSummary</referenceName>
+            <required>true</required>
+        </inputs>
+        <inputs>
+            <apiName>CandidateList</apiName>
+            <definition>primitive://String</definition>
+            <masterLabel>CandidateList</masterLabel>
+            <referenceName>Input:CandidateList</referenceName>
+            <required>true</required>
+        </inputs>
+        <primaryModel>testTemp0_CM_12l_OKM89276f35</primaryModel>
+        <status>Published</status>
+        <versionIdentifier>dIRBZxdJBYVmvmwv4/3DkrD7prMYAANFTVuvFEZTzUI=_1</versionIdentifier>
+    </templateVersions>
+    <type>einstein_gpt__flex</type>
+    <visibility>Global</visibility>
+</GenAiPromptTemplate>

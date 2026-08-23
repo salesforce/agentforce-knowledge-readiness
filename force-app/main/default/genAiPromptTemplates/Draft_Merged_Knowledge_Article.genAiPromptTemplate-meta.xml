@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<GenAiPromptTemplate xmlns="http://soap.sforce.com/2006/04/metadata">
+    <activeVersionIdentifier>dIRBZxdJBYVmvmwv4/3DkrD7prMYAANFTVuvFEZTzUI=_1</activeVersionIdentifier>
+    <developerName>Draft_Merged_Knowledge_Article</developerName>
+    <masterLabel>Draft_Merged_Knowledge_Article</masterLabel>
+    <overridable>false</overridable>
+    <templateVersions>
+        <content>You are an expert Technical Writer and Knowledge Manager. You have been provided with two duplicate knowledge articles that solve the same problem. Synthesize them into a single, comprehensive article.
+
+Combine all unique troubleshooting steps and technical facts into a single logical flow. Discard redundant information. Use professional knowledge base formatting with H2 sections and bullet points for steps. Create a concise, unified Title and Summary.
+
+Article 1:
+{!$Input:Article1_Text}
+
+Article 2:
+{!$Input:Article2_Text}
+
+Output the merged article body content only, no JSON wrapping.
+</content>
+        <inputs>
+            <apiName>Article1_Text</apiName>
+            <definition>primitive://String</definition>
+            <masterLabel>Article1_Text</masterLabel>
+            <referenceName>Input:Article1_Text</referenceName>
+            <required>true</required>
+        </inputs>
+        <inputs>
+            <apiName>Article2_Text</apiName>
+            <definition>primitive://String</definition>
+            <masterLabel>Article2_Text</masterLabel>
+            <referenceName>Input:Article2_Text</referenceName>
+            <required>true</required>
+        </inputs>
+        <primaryModel>testTemp0_CM_12l_OKM89276f35</primaryModel>
+        <status>Published</status>
+        <versionIdentifier>dIRBZxdJBYVmvmwv4/3DkrD7prMYAANFTVuvFEZTzUI=_1</versionIdentifier>
+    </templateVersions>
+    <type>einstein_gpt__flex</type>
+    <visibility>Global</visibility>
+</GenAiPromptTemplate>

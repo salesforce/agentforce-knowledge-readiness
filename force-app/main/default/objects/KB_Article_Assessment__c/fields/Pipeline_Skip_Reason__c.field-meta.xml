@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Pipeline_Skip_Reason__c</fullName>
+    <description>Populated by KBAssessmentPipelineDispatcher when an article is excluded from the dedup pipeline because one of its quality-gate dimension scores (Completeness, Structure, Clarity) is below the configured threshold. Empty when the article passed the gate.</description>
+    <externalId>false</externalId>
+    <label>Pipeline Skip Reason</label>
+    <length>1024</length>
+    <required>false</required>
+    <trackTrending>false</trackTrending>
+    <type>LongTextArea</type>
+    <visibleLines>2</visibleLines>
+</CustomField>

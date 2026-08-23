@@ -1,0 +1,36 @@
+/*
+ * Sticky footer pinned to the bottom of the wizard card body.
+ * The parent card provides the scroll context via a max-height container.
+ *
+ * no own border-top. This footer always renders in a lightning-card
+ * `slot="footer"`, which already draws the SLDS card-footer separator. The
+ * component's own border sat on the *padded inner* div, so it stopped short of
+ * the card edges and read as an orphaned hairline floating above the buttons.
+ * Rely on the card's native full-width separator instead.
+ */
+.sticky-footer {
+    position: sticky;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 5;
+    background: var(--slds-g-color-neutral-base-100, #ffffff);
+}
+
+/*
+ * "Unsaved changes" as a quiet status indicator next to Previous, not a
+ * label wedged against the Save CTA. A small amber dot signals dirty state.
+ */
+.dirty-badge {
+    display: inline-flex;
+    align-items: center;
+}
+
+.dirty-dot {
+    display: inline-block;
+    width: 0.5rem;
+    height: 0.5rem;
+    margin-right: 0.375rem;
+    border-radius: 50%;
+    background: var(--slds-g-color-warning-base-40, #dd7a01);
+}

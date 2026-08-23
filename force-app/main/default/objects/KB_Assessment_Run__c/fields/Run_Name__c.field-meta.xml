@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Run_Name__c</fullName>
+    <description>User-supplied name for the assessment run, captured on the "Assessment details" step of the new-assessment flow. Mandatory in the UI/controller; left optional at the metadata level because runs are inserted from async (queueable/batch) contexts where a hard field-required would break DML. Surfaces in the All Assessments list with the auto-number Name as a fallback when blank.</description>
+    <externalId>false</externalId>
+    <label>Run Name</label>
+    <length>255</length>
+    <required>false</required>
+    <trackTrending>false</trackTrending>
+    <type>Text</type>
+    <unique>false</unique>
+</CustomField>

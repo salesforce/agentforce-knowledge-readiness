@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Is_ADL__c</fullName>
+    <defaultValue>false</defaultValue>
+    <description>Whether the configured search index is an Agentforce Data Library (ADL). An ADL ingests all article versions (Published, Draft, Archived), so when true the dedup vector query is prefiltered to currently-published content. When false (a custom Data Cloud index), the admin is expected to have scoped the index to published articles only (see README) — no automatic publish-status filter is applied.</description>
+    <externalId>false</externalId>
+    <label>Is Agentforce Data Library (ADL)</label>
+    <trackTrending>false</trackTrending>
+    <type>Checkbox</type>
+</CustomField>

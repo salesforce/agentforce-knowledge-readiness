@@ -1,0 +1,70 @@
+<template>
+    <!-- AI-fixable group: heading removed per feedback; the grouping + the
+         Fix-with-AI button are retained (only these rows reach the LLM). -->
+    <template lwc:if={hasAiFixableIssues}>
+        <ul class="slds-has-dividers_bottom-space slds-m-bottom_small">
+            <template for:each={aiFixableIssues} for:item="issue">
+                <li key={issue.key} class="slds-item slds-p-vertical_x-small">
+                    <div class="slds-grid slds-wrap slds-grid_vertical-align-center slds-m-bottom_xx-small">
+                        <lightning-badge label={issue.dimension} class="slds-m-right_xx-small"></lightning-badge>
+                        <template lwc:if={issue.impact}>
+                            <span class={issue.impactBadgeClass}>{issue.impactLabel}</span>
+                        </template>
+                        <template lwc:if={issue.showStatus}>
+                            <span class="slds-badge slds-m-left_xx-small">{issue.status}</span>
+                        </template>
+                    </div>
+                    <p class="slds-text-body_small">{issue.recommendation}</p>
+                </li>
+            </template>
+        </ul>
+        <template lwc:if={showFixButton}>
+            <p class="slds-text-body_small slds-text-color_weak slds-m-bottom_x-small">
+                The AI rewrites the article addressing the selected issues. The result is a <strong>new Draft version</strong> for you to review — your published article stays live until you approve and publish the draft.
+            </p>
+            <lightning-button
+                label="Fix issues with AI…"
+                variant="brand"
+                icon-name="utility:einstein"
+                onclick={handleOpenFixModal}>
+            </lightning-button>
+        </template>
+    </template>
+
+    <!-- Manual-only group -->
+    <template lwc:if={hasManualOnlyIssues}>
+        <h3 class="slds-text-title_caps slds-m-top_medium slds-m-bottom_x-small">Needs human review</h3>
+        <p class="slds-text-body_small slds-text-color_weak slds-m-bottom_x-small">
+            The AI can't safely fix duplication, conflict, or stale content — these need your judgement.
+        </p>
+        <ul class="slds-has-dividers_bottom-space">
+            <template for:each={manualOnlyIssues} for:item="issue">
+                <li key={issue.key} class="slds-item slds-p-vertical_x-small">
+                    <div class="slds-grid slds-wrap slds-grid_vertical-align-center slds-m-bottom_xx-small">
+                        <lightning-badge label={issue.dimension} class="slds-m-right_xx-small"></lightning-badge>
+                        <template lwc:if={issue.impact}>
+                            <span class={issue.impactBadgeClass}>{issue.impactLabel}</span>
+                        </template>
+                    </div>
+                    <p class="slds-text-body_small slds-m-bottom_xx-small">{issue.recommendation}</p>
+                    <template lwc:if={issue.isDedup}>
+                        <lightning-button
+                            label="Resolve in Action Center"
+                            variant="base"
+                            data-rec-id={issue.recId}
+                            onclick={handleResolveCandidate}>
+                        </lightning-button>
+                    </template>
+                    <template lwc:if={issue.isFreshness}>
+                        <lightning-button
+                            label="Edit as Draft"
+                            variant="base"
+                            icon-name="utility:edit"
+                            onclick={handleEditAsDraft}>
+                        </lightning-button>
+                    </template>
+                </li>
+            </template>
+        </ul>
+    </template>
+</template>

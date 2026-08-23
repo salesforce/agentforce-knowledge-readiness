@@ -1,0 +1,32 @@
+<template>
+    <!-- details-form caps the field width and adds breathing room so the
+         name/description inputs aren't full-bleed and oversized inside the
+         large modal. -->
+    <div class="slds-box slds-theme_default details-form">
+        <div class="slds-form-element slds-m-bottom_medium">
+            <lightning-input
+                data-id="name"
+                type="text"
+                label="Assessment name"
+                value={runName}
+                required
+                max-length="255"
+                placeholder="e.g. Agentforce Voice — Q4 readiness"
+                message-when-value-missing="Enter a name so you can find this run later."
+                onchange={handleNameChange}>
+            </lightning-input>
+            <div class="slds-text-body_small slds-text-color_weak slds-m-top_xx-small">
+                Naming this run helps you identify it later in the All Assessments
+                list — otherwise runs are only numbered (RUN-0001, RUN-0002, …).
+            </div>
+        </div>
+        <div class="slds-form-element">
+            <lightning-textarea
+                data-id="description"
+                label="Description (optional)"
+                value={description}
+                onchange={handleDescriptionChange}>
+            </lightning-textarea>
+        </div>
+    </div>
+</template>

@@ -1,0 +1,13 @@
+/* run filter + refresh on a single row. The filter grows to fill the width
+   (it was full-width before), the refresh button sits at the end, vertically
+   centered on the dropdown. */
+.run-filter-row {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+}
+
+.run-filter-grow {
+    flex: 1 1 auto;
+    min-width: 0; /* let the filter shrink instead of overflowing the row */
+}

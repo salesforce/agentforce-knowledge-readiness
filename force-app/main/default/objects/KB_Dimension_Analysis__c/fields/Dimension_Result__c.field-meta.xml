@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Dimension_Result__c</fullName>
+    <description>Parent dimension result. Master-detail — analysis rows are cascade-deleted with the parent dimension result.</description>
+    <externalId>false</externalId>
+    <label>Dimension Result</label>
+    <referenceTo>KB_Dimension_Result__c</referenceTo>
+    <relationshipLabel>Dimension Analyses</relationshipLabel>
+    <relationshipName>Dimension_Analyses</relationshipName>
+    <relationshipOrder>0</relationshipOrder>
+    <reparentableMasterDetail>false</reparentableMasterDetail>
+    <trackTrending>false</trackTrending>
+    <type>MasterDetail</type>
+    <writeRequiresMasterRead>false</writeRequiresMasterRead>
+</CustomField>

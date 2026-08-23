@@ -1,0 +1,92 @@
+<template>
+    <lightning-modal-header label="Resolve Contradiction">
+        <p slot="tagline" class="slds-text-body_small">
+            These articles contain contradictory information. Choose which one is authoritative.
+        </p>
+    </lightning-modal-header>
+    <lightning-modal-body>
+        <template lwc:if={isLoading}>
+            <lightning-spinner alternative-text="Loading articles"></lightning-spinner>
+        </template>
+
+        <template lwc:if={error}>
+            <div class="slds-notify slds-notify_alert slds-alert_error slds-m-bottom_medium" role="alert">
+                <p>{error}</p>
+            </div>
+        </template>
+
+        <!-- AI Reasoning -->
+        <template lwc:if={reasoning}>
+            <div class="slds-box slds-theme_shade slds-m-bottom_medium">
+                <h4 class="slds-text-title_bold slds-m-bottom_x-small">AI-Detected Conflict</h4>
+                <p>{reasoning}</p>
+            </div>
+        </template>
+
+        <!-- Side by side articles -->
+        <template lwc:if={comparison}>
+            <div class="slds-grid slds-gutters">
+                <div class="slds-col slds-size_1-of-2">
+                    <div class="slds-box article-box">
+                        <div class="slds-grid slds-grid_align-spread slds-m-bottom_small">
+                            <h3 class="slds-text-heading_small">Article A</h3>
+                            <lightning-badge label={articleA.publishStatus}></lightning-badge>
+                        </div>
+                        <p class="slds-text-title_bold">{articleA.title}</p>
+                        <p class="slds-text-body_small slds-text-color_weak slds-m-bottom_small">
+                            {articleA.articleNumber} &bull; v{articleA.versionNumber} &bull; {articleA.lastModifiedBy}
+                        </p>
+                        <div class="article-summary">
+                            <p>{articleA.summary}</p>
+                        </div>
+                        <div class="slds-m-top_medium">
+                            <lightning-button
+                                label="This article is correct"
+                                variant="success"
+                                onclick={handleChooseA}
+                                disabled={submitDisabled}
+                                class="slds-button_stretch"
+                            ></lightning-button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="slds-col slds-size_1-of-2">
+                    <div class="slds-box article-box">
+                        <div class="slds-grid slds-grid_align-spread slds-m-bottom_small">
+                            <h3 class="slds-text-heading_small">Article B</h3>
+                            <lightning-badge label={articleB.publishStatus}></lightning-badge>
+                        </div>
+                        <p class="slds-text-title_bold">{articleB.title}</p>
+                        <p class="slds-text-body_small slds-text-color_weak slds-m-bottom_small">
+                            {articleB.articleNumber} &bull; v{articleB.versionNumber} &bull; {articleB.lastModifiedBy}
+                        </p>
+                        <div class="article-summary">
+                            <p>{articleB.summary}</p>
+                        </div>
+                        <div class="slds-m-top_medium">
+                            <lightning-button
+                                label="This article is correct"
+                                variant="success"
+                                onclick={handleChooseB}
+                                disabled={submitDisabled}
+                                class="slds-button_stretch"
+                            ></lightning-button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </template>
+    </lightning-modal-body>
+    <lightning-modal-footer>
+        <lightning-button label="Cancel" onclick={handleCancel}></lightning-button>
+ <!--: "Needs SME Review" retired (was a no-op == dismiss). -->
+        <lightning-button
+            label="Both valid, different scope"
+            variant="neutral"
+            icon-name="utility:switch"
+            onclick={handleBothValid}
+            disabled={submitDisabled}
+        ></lightning-button>
+    </lightning-modal-footer>
+</template>

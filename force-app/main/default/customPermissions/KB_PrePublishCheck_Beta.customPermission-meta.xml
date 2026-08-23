@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomPermission xmlns="http://soap.sforce.com/2006/04/metadata">
+    <description>Beta gate for the Pre-publish check tab on the Knowledge Assessment record-page panel. Hidden by default until the feature is polished (more pre-publish checks beyond the verifyDraft conflict check).</description>
+    <isLicensed>false</isLicensed>
+    <label>KB Pre-Publish Check (Beta)</label>
+</CustomPermission>

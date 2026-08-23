@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Telemetry_Key__c</fullName>
+    <description>The stable KnowledgeArticleId used as external ID for upsert. Ensures one telemetry record per article (latest version overwrites previous).</description>
+    <caseSensitive>true</caseSensitive>
+    <externalId>true</externalId>
+    <label>Telemetry Key</label>
+    <length>18</length>
+    <required>true</required>
+    <type>Text</type>
+    <unique>true</unique>
+</CustomField>

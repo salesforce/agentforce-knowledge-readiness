@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Queueable_Threshold__c</fullName>
+    <defaultValue>50</defaultValue>
+    <description>Routing: article counts above Sync_Threshold__c and at or below this use the queueable fan-out tier (one queueable per dimension, one hop each). Above this the Batch Apex tier runs. When LLM mode is on, the router caps the effective value at 50 regardless of the admin-set value, to stay within the 100-callout governor budget.</description>
+    <externalId>false</externalId>
+    <label>Queueable Threshold (articles)</label>
+    <precision>5</precision>
+    <required>false</required>
+    <scale>0</scale>
+    <trackTrending>false</trackTrending>
+    <type>Number</type>
+    <unique>false</unique>
+</CustomField>

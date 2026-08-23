@@ -1,0 +1,13 @@
+<template>
+ <!--: no page chrome— this component is just the preview modal host.
+         The shell opens it via openPreview() from the Select Articles step. -->
+    <c-kb-run-cost-preview
+        is-open={showCostPreview}
+        article-count={costPreviewArticleCount}
+        selected-dimensions={selectedDimensions}
+        assessment-name={runName}
+        assessment-description={description}
+        onproceed={handleCostPreviewProceed}
+        oncancel={handleCostPreviewCancel}>
+    </c-kb-run-cost-preview>
+</template>

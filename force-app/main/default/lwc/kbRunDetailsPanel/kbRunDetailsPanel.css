@@ -1,0 +1,43 @@
+:host {
+    /* Flex container so the card fills the host in both dimensions when the
+       host is stretched by the dashboard's summary-cards-row flex. */
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+}
+
+.details-card {
+    background: white;
+    flex: 1 1 auto;
+}
+
+.detail-list {
+    margin: 0;
+}
+
+.detail-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 0.5rem;
+    padding: 0.4rem 0;
+    border-bottom: 1px solid #f3f3f3;
+}
+
+.detail-row:last-child {
+    border-bottom: none;
+}
+
+.detail-label {
+    font-size: 0.75rem;
+    color: #706e6b;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+}
+
+.detail-value {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: #16325c;
+    text-align: right;
+}

@@ -1,0 +1,64 @@
+<template>
+    <div class="slds-box slds-theme_default progress-box">
+        <div class="slds-grid slds-grid_align-spread slds-m-bottom_medium">
+            <div>
+                <h2 class="slds-text-heading_medium">{runName}</h2>
+                <p class="slds-text-body_small slds-text-color_weak">{descriptionDisplay}</p>
+            </div>
+            <div class="slds-grid slds-gutters_x-small">
+                <template lwc:if={showCancelButton}>
+                    <div class="slds-col">
+                        <lightning-button
+                            variant="destructive-text"
+                            label={cancelButtonLabel}
+                            icon-name="utility:close"
+                            disabled={cancelButtonDisabled}
+                            onclick={handleCancel}>
+                        </lightning-button>
+                    </div>
+                </template>
+                <div class="slds-col">
+                    <lightning-button
+                        variant="neutral"
+                        label="Back to all assessments"
+                        icon-name="utility:back"
+                        onclick={handleBack}>
+                    </lightning-button>
+                </div>
+            </div>
+        </div>
+
+        <div class="phase-card">
+            <div class="slds-grid slds-grid_vertical-align-center slds-m-bottom_small">
+                <div class="live-spinner slds-m-right_medium" aria-hidden="true">
+                    <div class="dot-spinner">
+                        <span class="dot"></span>
+                        <span class="dot"></span>
+                        <span class="dot"></span>
+                    </div>
+                </div>
+                <div role="status" aria-live="polite" aria-atomic="true">
+                    <p class="slds-text-heading_small phase-label">{phaseLabel}</p>
+                    <p class="slds-text-body_small slds-text-color_weak">
+                        Elapsed: {elapsedDisplay}
+                        <template lwc:if={showEta}> · Est. remaining: {etaDisplay}</template>
+                    </p>
+                </div>
+            </div>
+
+            <div class="slds-grid slds-grid_align-spread slds-grid_vertical-align-end slds-m-bottom_xx-small">
+                <span class="slds-text-body_small slds-text-color_weak progress-copy" aria-live="polite">{progressCopy}</span>
+                <span class="slds-text-heading_small percent-label">{progressPercentLabel}</span>
+            </div>
+            <lightning-progress-bar value={progressPercent} size="large"></lightning-progress-bar>
+
+            <template lwc:if={error}>
+                <p class="slds-m-top_small slds-text-color_error">{error}</p>
+            </template>
+        </div>
+
+        <div class="slds-m-top_medium slds-text-body_small slds-text-color_weak helper-text">
+            This run is in progress. We’ll refresh automatically when it completes. Safe to leave this tab — the run continues on the server.
+        </div>
+    </div>
+</template>

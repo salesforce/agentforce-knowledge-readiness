@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Composite_Key__c</fullName>
+    <description>Run-scoped composite key: assessmentRunId + '_' + min(Article1Id, Article2Id) + '_' + max(Article1Id, Article2Id). Run-scoping keeps each assessment run's candidate rows unique on the article pair so concurrent runs over the same articles don't collide on this unique key. Ensures idempotent upsert regardless of article order.</description>
+    <caseSensitive>true</caseSensitive>
+    <externalId>true</externalId>
+    <label>Composite Key</label>
+    <length>60</length>
+    <required>true</required>
+    <type>Text</type>
+    <unique>true</unique>
+</CustomField>

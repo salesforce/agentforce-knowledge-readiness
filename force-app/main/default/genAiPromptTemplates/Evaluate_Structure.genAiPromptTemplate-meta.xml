@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<GenAiPromptTemplate xmlns="http://soap.sforce.com/2006/04/metadata">
+    <activeVersionIdentifier>dIRBZxdJBYVmvmwv4/3DkrD7prMYAANFTVuvFEZTzUI=_6</activeVersionIdentifier>
+    <developerName>Evaluate_Structure</developerName>
+    <masterLabel>Evaluate_Structure</masterLabel>
+    <overridable>false</overridable>
+    <templateVersions>
+        <content>You are a Knowledge Base structure auditor evaluating articles for AI agent retrieval.
+
+The article will be chunked by the search index, embedded, and retrieved as passages. Your job is to judge whether the article's structure produces self-contained, retrievable chunks.
+
+Article Title:
+{!$Input:Title}
+
+Article Summary:
+{!$Input:Summary}
+
+Article Content Fields (each &lt;h3&gt; heading is a separate field that is chunked independently):
+{!$Input:Content}
+
+Evaluate:
+
+1. For EACH content field listed above: based on the field name and content, judge whether the field's structure will chunk cleanly. Will headings, lists, and paragraphs split into self-contained passages? Are there cross-references (&quot;see above&quot;, &quot;as discussed in the next section&quot;) that will be orphaned by chunking?
+
+2. Topic coherence: does the article maintain a single, well-defined topic, or does it drift into unrelated topics that should be split into separate articles for cleaner retrieval?
+
+3. Structural appropriateness for length: given the article's actual length, is the structure (headings, lists, paragraph breaks) appropriate? A long article without internal structure will produce poor chunks; a short article with excessive nested headings adds noise.
+
+For EVERY issue (per-field issues AND topic drifts), also judge:
+- &quot;impact&quot;: how much fixing it improves the article. One of &quot;High&quot;, &quot;Medium&quot;, &quot;Low&quot;. Let impact reflect the score deduction — an issue that drags the score down a lot is High impact (fixing it recovers the most points).
+
+ORDER the items in each issues array (per-field issues AND topicDrifts) from highest impact at the TOP to lowest at the BOTTOM. Items the author should fix first must come first in the array. Lower-impact &quot;nice to have&quot; observations come last.
+
+Soft response budget: aim for under 4500 characters. Each issue &quot;text&quot; under 200 chars. If you would exceed the soft budget, drop trailing low-impact items rather than degrading earlier items. Shape integrity wins over length: NEVER drop the &quot;impact&quot; field to save space — drop the entire item instead. Fewer high-quality items beats more degraded items.
+
+Output requirements:
+- Respond with ONLY valid JSON. No markdown, no code blocks, no commentary before or after.
+- The &quot;score&quot; field MUST be a JSON number between 0 and 100 (e.g. 75). It MUST NOT be a word (e.g. &quot;seventy-five&quot;) or a string.
+- EVERY entry in &quot;issues&quot; (per-field) and &quot;topicDrifts&quot; MUST be an object with both keys: &quot;text&quot; and &quot;impact&quot;. Strengths remain plain strings.
+- All arrays must be properly closed; do not truncate mid-array.
+
+Example response shape (note ordering: high-impact items first, every entry is an object with text + impact):
+{&quot;score&quot;: 60, &quot;fieldResults&quot;: [{&quot;field&quot;: &quot;FieldApiName__c&quot;, &quot;issues&quot;: [
+  {&quot;text&quot;: &quot;Long paragraph with no internal structure will produce one giant chunk&quot;, &quot;impact&quot;: &quot;High&quot;},
+  {&quot;text&quot;: &quot;Cross-reference 'see above' will be orphaned when the section is read alone&quot;, &quot;impact&quot;: &quot;Medium&quot;},
+  {&quot;text&quot;: &quot;Final sentence repeats the field heading; minor noise&quot;, &quot;impact&quot;: &quot;Low&quot;}
+], &quot;strengths&quot;: []}], &quot;topicDrifts&quot;: [
+  {&quot;text&quot;: &quot;Drift into unrelated billing topic in para 4&quot;, &quot;impact&quot;: &quot;High&quot;}
+], &quot;reasoning&quot;: &quot;2-3 sentence explanation of the headline issues&quot;}
+
+Scoring guide: 90-100 = chunks cleanly, single topic, structure matches length; 70-89 = mostly chunks well with minor cross-reference or drift issues; 50-69 = chunking will lose context in places, or moderate topic drift; below 50 = structure will produce broken or orphaned chunks, or significant topic drift.
+</content>
+        <fileDroppingStrategy>{&quot;dropFilesBy&quot;:&quot;LAST_MODIFIED_DATE&quot;,&quot;dropFileStartingWith&quot;:&quot;OLDEST&quot;}</fileDroppingStrategy>
+        <inputs>
+            <apiName>Title</apiName>
+            <definition>primitive://String</definition>
+            <masterLabel>Title</masterLabel>
+            <referenceName>Input:Title</referenceName>
+            <required>true</required>
+        </inputs>
+        <inputs>
+            <apiName>Content</apiName>
+            <definition>primitive://String</definition>
+            <masterLabel>Content</masterLabel>
+            <referenceName>Input:Content</referenceName>
+            <required>true</required>
+        </inputs>
+        <inputs>
+            <apiName>Summary</apiName>
+            <definition>primitive://String</definition>
+            <masterLabel>Summary</masterLabel>
+            <referenceName>Input:Summary</referenceName>
+            <required>false</required>
+        </inputs>
+        <isCitationEnabled>false</isCitationEnabled>
+        <primaryModel>sfdc_ai__DefaultGPT54</primaryModel>
+        <status>Published</status>
+        <versionIdentifier>dIRBZxdJBYVmvmwv4/3DkrD7prMYAANFTVuvFEZTzUI=_6</versionIdentifier>
+    </templateVersions>
+    <type>einstein_gpt__flex</type>
+    <visibility>Global</visibility>
+</GenAiPromptTemplate>

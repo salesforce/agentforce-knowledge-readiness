@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomObject xmlns="http://soap.sforce.com/2006/04/metadata">
+    <description>Configuration for the 5-Tier Knowledge Deduplication Pipeline. Controls thresholds, callout budgets, score bands, and pipeline behavior.</description>
+    <label>KM Pipeline Config</label>
+    <pluralLabel>KM Pipeline Configs</pluralLabel>
+    <visibility>Public</visibility>
+</CustomObject>

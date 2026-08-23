@@ -1,0 +1,38 @@
+<template>
+    <span class="cell-wrapper" onmouseenter={handleMouseEnter} onmouseleave={handleMouseLeave}>
+        <a
+            href={recordUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            class={linkClass}
+            onclick={handleLinkClick}
+            title={titleTooltip}
+        >
+            {title}
+        </a>
+        <template lwc:if={showPopover}>
+            <div class="article-popover slds-popover slds-popover_small slds-nubbin_top-left" role="tooltip" aria-label={popoverLabel}>
+                <div class="slds-popover__body slds-p-around_small">
+                    <template lwc:if={isLoading}>
+                        <lightning-spinner size="small" alternative-text="Loading article details"></lightning-spinner>
+                    </template>
+                    <template lwc:elseif={detail}>
+                        <dl class="slds-list_horizontal slds-wrap">
+                            <dt class="slds-item_label slds-text-color_weak">Number</dt>
+                            <dd class="slds-item_detail">{detail.articleNumber}</dd>
+                            <dt class="slds-item_label slds-text-color_weak">Status</dt>
+                            <dd class="slds-item_detail">{detail.publishStatus}</dd>
+                            <dt class="slds-item_label slds-text-color_weak">Version</dt>
+                            <dd class="slds-item_detail">{detail.versionNumber}</dd>
+                            <dt class="slds-item_label slds-text-color_weak">Modified</dt>
+                            <dd class="slds-item_detail">{formattedDate}</dd>
+                        </dl>
+                        <template lwc:if={detail.summary}>
+                            <p class="slds-m-top_x-small slds-text-body_small summary-snippet">{detail.summary}</p>
+                        </template>
+                    </template>
+                </div>
+            </div>
+        </template>
+    </span>
+</template>

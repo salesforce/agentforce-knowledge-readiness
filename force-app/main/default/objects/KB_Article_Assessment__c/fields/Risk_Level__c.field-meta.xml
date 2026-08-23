@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Risk_Level__c</fullName>
+    <description>Formula: Risk level based on Overall Score thresholds.</description>
+    <externalId>false</externalId>
+    <formula>IF(Overall_Score__c &gt;= 70, &quot;Low&quot;,
+IF(Overall_Score__c &gt;= 40, &quot;Medium&quot;,
+&quot;High&quot;))</formula>
+    <formulaTreatBlanksAs>BlankAsZero</formulaTreatBlanksAs>
+    <inlineHelpText>Risk level: Low (70+), Medium (40-69), High (&lt;40).</inlineHelpText>
+    <label>Risk Level</label>
+    <required>false</required>
+    <trackTrending>false</trackTrending>
+    <type>Text</type>
+    <unique>false</unique>
+</CustomField>

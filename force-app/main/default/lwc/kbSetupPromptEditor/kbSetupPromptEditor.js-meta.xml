@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<LightningComponentBundle xmlns="http://soap.sforce.com/2006/04/metadata">
+    <apiVersion>65.0</apiVersion>
+    <isExposed>false</isExposed>
+    <masterLabel>KB Setup Prompt Editor</masterLabel>
+    <description>Step 4: LLM prompt template editor with per-dimension toggle and save</description>
+</LightningComponentBundle>

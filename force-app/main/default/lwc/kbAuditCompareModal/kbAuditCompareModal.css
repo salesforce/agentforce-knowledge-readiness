@@ -1,0 +1,9 @@
+.article-summary {
+    white-space: pre-wrap;
+    max-height: 300px;
+    overflow-y: auto;
+    padding: 0.5rem;
+    background: #fafaf9;
+    border-radius: 0.25rem;
+    margin-top: 0.25rem;
+}

@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Analysis_Text__c</fullName>
+    <description>The single issue or strength sentence emitted by the scorer. This is the source of truth — KB_Dimension_Result__c.Reasoning__c retains a human-readable summary but is no longer parsed by downstream code.</description>
+    <externalId>false</externalId>
+    <label>Analysis Text</label>
+    <length>32000</length>
+    <trackTrending>false</trackTrending>
+    <type>LongTextArea</type>
+    <visibleLines>5</visibleLines>
+</CustomField>

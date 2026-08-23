@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Requires_Pipeline_Data__c</fullName>
+    <defaultValue>false</defaultValue>
+    <description>When true, this dimension reads Duplicate_Candidate__c rows written by the dedup pipeline. Dimensions with this flag default to 100 if no candidates are present.</description>
+    <externalId>false</externalId>
+    <fieldManageability>DeveloperControlled</fieldManageability>
+    <label>Requires Pipeline Data</label>
+    <type>Checkbox</type>
+</CustomField>

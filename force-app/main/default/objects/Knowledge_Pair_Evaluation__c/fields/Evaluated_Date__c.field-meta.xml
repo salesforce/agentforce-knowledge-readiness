@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Evaluated_Date__c</fullName>
+    <description>Timestamp of when this pair was last evaluated by the LLM.</description>
+    <externalId>false</externalId>
+    <label>Evaluated Date</label>
+    <required>true</required>
+    <type>DateTime</type>
+</CustomField>

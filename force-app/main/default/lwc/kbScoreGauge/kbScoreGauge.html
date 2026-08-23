@@ -1,0 +1,36 @@
+<template>
+    <div class={containerClass}>
+        <div class="gauge-ring">
+            <svg viewBox="0 0 120 120" class="gauge-svg">
+                <!-- Background ring -->
+                <circle
+                    cx="60"
+                    cy="60"
+                    r="54"
+                    fill="none"
+                    stroke="#e5e5e5"
+                    stroke-width="8"
+                    style={bgRingStyle}
+                    class="ring-bg">
+                </circle>
+                <!-- Score ring -->
+                <circle
+                    cx="60"
+                    cy="60"
+                    r="54"
+                    fill="none"
+                    stroke-width="8"
+                    stroke-linecap="round"
+                    style={ringStyle}
+                    class="ring-progress"
+                    transform="rotate(-90 60 60)">
+                </circle>
+            </svg>
+            <div class="gauge-center">
+                <span class="gauge-score" style={scoreStyle}>{scoreValue}</span>
+            </div>
+        </div>
+        <div class="gauge-label">{label}</div>
+        <div class="gauge-badge" style={badgeStyle}>{tierLabel}</div>
+    </div>
+</template>

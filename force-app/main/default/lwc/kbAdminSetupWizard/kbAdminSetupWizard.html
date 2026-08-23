@@ -1,0 +1,99 @@
+<template>
+    <h1 class="slds-text-heading_large">VERSION 4.0 - TEST</h1>
+    <lightning-card title="Assessment Setup Wizard" icon-name="custom:custom108">
+        <!-- Step Indicator -->
+        <div class="slds-p-horizontal_medium slds-p-top_small">
+    <lightning-progress-indicator current-step={currentStep} type="base" variant="base">
+        <template for:each={steps} for:item="step">
+            <lightning-progress-step
+                key={step.value}
+                label={step.label}
+                value={step.value}
+                onclick={handleStepClick}>
+            </lightning-progress-step>
+        </template>
+    </lightning-progress-indicator>
+
+    <div class="step-labels" aria-hidden="true">
+        <template for:each={stepsWithState} for:item="step">
+            <div key={step.value}
+                 class={step.labelClass}
+                 data-step={step.value}
+                 onclick={handleStepClick}>
+                {step.index}. {step.label}
+            </div>
+        </template>
+    </div>
+</div>
+
+        <!-- Step Content -->
+        <div class="wizard-body slds-p-around_medium">
+            <template if:true={isLoading}>
+                <div class="slds-align_absolute-center slds-p-around_large">
+                    <lightning-spinner alternative-text="Loading configuration..." size="medium"></lightning-spinner>
+                </div>
+            </template>
+
+            <template if:false={isLoading}>
+                <!-- Step 1: Scan Config -->
+                <template if:true={isStep1}>
+                    <c-kb-setup-scan-config
+                        config={scanConfig}
+                        onconfigchange={handleConfigChange}>
+                    </c-kb-setup-scan-config>
+                </template>
+
+                <!-- Step 2: Score Weights -->
+                <template if:true={isStep2}>
+                    <c-kb-setup-score-weights
+                        weights={scoreWeights}
+                        onweightschange={handleWeightsChange}>
+                    </c-kb-setup-score-weights>
+                </template>
+
+                <!-- Step 3: Prompt Templates -->
+                <template if:true={isStep3}>
+                    <c-kb-setup-prompt-editor></c-kb-setup-prompt-editor>
+                </template>
+
+ <!-- Step 4 placeholder. This wizard is not used by the live app (the Setup
+                     tab uses kbSetupExperienceWizard); the step is left as a
+                     placeholder to avoid renumbering an unmounted component. -->
+                <template if:true={isStep4}>
+                    <div class="slds-box slds-theme_shade slds-text-color_weak slds-text-body_small">
+                        This step is not used.
+                    </div>
+                </template>
+
+                <!-- Step 5: Pipeline Config -->
+                <template if:true={isStep5}>
+                    <c-kb-setup-pipeline-config
+                        config={pipelineConfig}
+                        onconfigchange={handlePipelineConfigChange}>
+                    </c-kb-setup-pipeline-config>
+                </template>
+
+                <!-- Step 6: Vector Search -->
+                <template if:true={isStep6}>
+                    <c-kb-setup-vector-search
+                        config={vectorSearchConfig}
+                        onconfigchange={handleVectorConfigChange}>
+                    </c-kb-setup-vector-search>
+                </template>
+            </template>
+        </div>
+
+        <div slot="footer" class="slds-p-horizontal_none">
+            <c-kb-sticky-wizard-footer
+                primary-label={primaryCta.label}
+                primary-variant={primaryCta.variant}
+                primary-icon-name={primaryCta.iconName}
+                is-primary-disabled={primaryCta.disabled}
+                is-previous-disabled={isFirstStep}
+                show-dirty-badge={isCurrentStepDirty}
+                onprevious={handlePreviousClicked}
+                onprimary={handlePrimaryCtaClicked}>
+            </c-kb-sticky-wizard-footer>
+        </div>
+    </lightning-card>
+</template>

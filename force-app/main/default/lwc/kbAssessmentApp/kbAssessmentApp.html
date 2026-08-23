@@ -1,0 +1,222 @@
+<template>
+    <template lwc:if={isSetupLoading}>
+        <div class="slds-align_absolute-center slds-p-around_large">
+            <lightning-spinner alternative-text="Loading..."></lightning-spinner>
+        </div>
+    </template>
+    <template lwc:elseif={isSetupComplete}>
+    <!-- No card title: the "Assessments" tab/page chrome already titles this
+         surface. A card title here doubled it ("KB Readiness Assessment for
+         Agentforce" appeared twice). -->
+    <lightning-card>
+        <div class="slds-p-around_medium">
+            <!-- Base layer: All Assessments list. The new-assessment flow is a
+                 modal launched from here. -->
+            <template lwc:if={isHistoryView}>
+                <c-kb-assessment-history
+                    onviewrun={handleViewHistoricalRun}
+                    onviewactions={handleViewRunActions}
+                    onnewassessment={handleStartNewFromHistory}
+                    onrerunstarted={handleRerunStarted}
+                    onclonerun={handleCloneFromHistory}>
+                </c-kb-assessment-history>
+            </template>
+
+            <template lwc:if={isHistoricalResultView}>
+                <c-kb-assessment-dashboard
+                    assessment-result={historicalResult}
+                    onback={handleBackToHistory}
+                    onviewactions={handleViewRunActions}
+                    onviewarticleactions={handleViewArticleActions}>
+                </c-kb-assessment-dashboard>
+            </template>
+
+            <template lwc:if={isHistoricalRunningView}>
+                <c-kb-assessment-run-progress
+                    run-id={runningRunId}
+                    run-name={runningRunName}
+                    run-description={runningRunDescription}
+                    run-started-at={runningRunStartedAt}
+                    onback={handleBackToHistory}
+                    onrunfinished={handleRunFinished}>
+                </c-kb-assessment-run-progress>
+            </template>
+
+            <template lwc:if={isLoadingHistorical}>
+                <div class="slds-text-align_center slds-p-around_large">
+                    <lightning-spinner alternative-text="Loading" size="medium"></lightning-spinner>
+                    <p class="slds-m-top_medium">Loading assessment results...</p>
+                </div>
+            </template>
+        </div>
+    </lightning-card>
+
+ <!-- New-assessment modal: 3-step path. Width is step-dependent:
+         compact on details, full-size on Select Articles, medium on Preview.
+
+         a11y: this stays a hand-rolled per-step slds-modal (lightning/modal
+         locks its size at open() and can't resize per step — confirmed against the
+         SF docs, and the reason deferred it). The focus management that
+         lightning/modal gives natively is re-created in JS here:
+         - Focus trap: two tabindex="0" SENTINELS bookend slds-modal__container.
+           Tabbing onto one wraps focus to the far end of the dialog. This works
+           WITHOUT enumerating focusables across the three child shadow roots
+           (kbArticleSelector / kbAssessmentDetailsForm / kbRunCostPreview) — the
+           children always sit BETWEEN the header close button and the footer
+           buttons, both of which live in THIS template's shadow root, so the two
+           natural tab anchors are ours to grab.
+         - Escape closes (onkeydown on the dialog).
+         - Focus return to the trigger: the "New Assessment" / Clone button lives
+           in kbAssessmentHistory's shadow root, so that child captures it and
+           exposes restoreFocus() — the host calls it on every close path.
+         - Scroll-lock on document.body while open (toggled in JS). -->
+    <template lwc:if={isModalOpen}>
+        <!-- Top sentinel: focusing here (Shift+Tab off the first control) wraps
+             to the last focusable at the bottom of the dialog. -->
+        <span class="focus-sentinel" tabindex="0" data-sentinel="start" onfocus={handleSentinelStart}></span>
+        <section role="dialog" tabindex="-1" aria-modal="true" aria-labelledby="modal-heading-new-assessment"
+                 class={modalSizeClass} data-id="wizard-dialog" onkeydown={handleModalKeyDown}>
+            <div class="slds-modal__container">
+                <header class="slds-modal__header">
+                    <!-- Standard SLDS close button. The lightning-button-icon
+                         bare-inverse variant rendered as a white box on this
+                         white header — the icon-inverse button matches
+                         every other modal in the app. -->
+                    <button class="slds-button slds-button_icon slds-modal__close slds-button_icon-inverse"
+                            data-id="modal-close-btn"
+                            title="Close" onclick={handleCloseModal}>
+                        <lightning-icon icon-name="utility:close" variant="inverse" size="small" alternative-text="Close"></lightning-icon>
+                        <span class="slds-assistive-text">Close</span>
+                    </button>
+                    <h1 id="modal-heading-new-assessment" class="slds-modal__title slds-hyphenate">{modalStepTitle}</h1>
+ <!-- Step indicator inside the modal. Read-only:
+                         the path is a progress display, not navigation — the
+                         steps look clickable but don't move the flow, so the
+                         read-only-path class disables the misleading affordance.
+                         Navigation is the footer Back/Continue buttons only. -->
+                    <lightning-progress-indicator current-step={currentStep} type="path" variant="base" class="slds-m-top_small read-only-path">
+                        <lightning-progress-step label="Assessment Details" value="details"></lightning-progress-step>
+                        <lightning-progress-step label="Select Articles" value="select"></lightning-progress-step>
+                        <lightning-progress-step label="Preview" value="preview"></lightning-progress-step>
+                    </lightning-progress-indicator>
+                </header>
+
+                <div class="slds-modal__content slds-p-around_medium" data-id="modal-body">
+                    <!-- Step 1: details -->
+                    <template lwc:if={isDetailsStep}>
+                        <c-kb-assessment-details-form
+                            run-name={runName}
+                            description={description}
+                            ondetailschange={handleDetailsChange}>
+                        </c-kb-assessment-details-form>
+                    </template>
+
+                    <!-- Step 2: article selection. Kept mounted (hidden via
+                         class) once reached so the selection + row cache survive
+                         navigating to preview and back. -->
+                    <template lwc:if={hasReachedSelect}>
+                        <div class={selectStepClass}>
+                            <c-kb-article-selector
+                                assessment-name={runName}
+                                preselected-article-id={preselectedArticleId}
+                                preselected-article-ids={preselectedArticleIds}
+                                onselectionchange={handleSelectionChange}
+                                onpreselectionerror={handlePreselectionError}>
+                            </c-kb-article-selector>
+                        </div>
+                    </template>
+
+                    <!-- Step 3: preview (consumption + name/description, inline) -->
+                    <template lwc:if={isPreviewStep}>
+                        <c-kb-run-cost-preview
+                            embedded
+                            is-open
+                            article-count={selectedArticleCount}
+                            assessment-name={runName}
+                            assessment-description={description}
+                            selected-rows={selectedArticleRows}
+                            select-all-matching={selectAllMatchingFilter}
+                            onconfirmationchange={handleConfirmationChange}>
+                        </c-kb-run-cost-preview>
+                    </template>
+                </div>
+
+                <footer class="slds-modal__footer">
+                    <!-- Details step: cancel + continue -->
+                    <template lwc:if={isDetailsStep}>
+                        <lightning-button
+                            data-id="cancel-btn"
+                            label="Cancel"
+                            onclick={handleCloseModal}
+                            class="slds-m-right_x-small">
+                        </lightning-button>
+                        <lightning-button
+                            data-id="details-continue-btn"
+                            variant="brand"
+                            label="Continue"
+                            onclick={handleContinueToSelect}>
+                        </lightning-button>
+                    </template>
+
+                    <!-- Select step: back + continue to preview -->
+                    <template lwc:if={isSelectStep}>
+                        <lightning-button
+                            data-id="select-back-btn"
+                            label="Back"
+                            onclick={handleBackToDetails}
+                            class="slds-m-right_x-small">
+                        </lightning-button>
+                        <lightning-button
+                            data-id="continue-preview-btn"
+                            variant="brand"
+                            label="Continue to Preview"
+                            disabled={isSelectionEmpty}
+                            onclick={handleContinueToPreview}>
+                        </lightning-button>
+                    </template>
+
+                    <!-- Preview step: back + start assessment (hosted by the runner) -->
+                    <template lwc:if={isPreviewStep}>
+                        <lightning-button
+                            data-id="preview-back-btn"
+                            label="Back"
+                            onclick={handleBackToSelect}
+                            class="slds-m-right_x-small">
+                        </lightning-button>
+                        <lightning-button
+                            data-id="start-btn"
+                            variant="brand"
+                            label={startButtonLabel}
+                            disabled={startDisabled}
+                            onclick={handleStartFromPreview}>
+                        </lightning-button>
+                    </template>
+                </footer>
+            </div>
+        </section>
+        <!-- Bottom sentinel: focusing here (Tab off the last control) wraps to
+             the first focusable at the top of the dialog (the close button). -->
+        <span class="focus-sentinel" tabindex="0" data-sentinel="end" onfocus={handleSentinelEnd}></span>
+        <div class="slds-backdrop slds-backdrop_open"></div>
+    </template>
+
+    <!-- Submit host: performs the run submit + emits runstarted/submiterror.
+         Kept outside the modal markup so it persists across step re-renders. -->
+    <c-kb-assessment-runner
+        class="slds-hide"
+        run-name={runName}
+        description={description}
+        selected-article-ids={selectedArticleIds}
+        selected-article-count={selectedArticleCount}
+        selection-filter-context={selectionFilterContext}
+        select-all-matching-filter={selectAllMatchingFilter}
+        filter-snapshot={filterSnapshot}
+        excluded-ids={excludedIds}
+        onrunstarted={handleRunStarted}
+        onsubmiterror={handleSubmitError}>
+    </c-kb-assessment-runner>
+    </template>
+    <template lwc:else>
+        <c-setup-required-guard ongotosetup={handleGoToSetup}></c-setup-required-guard>
+    </template>
+</template>

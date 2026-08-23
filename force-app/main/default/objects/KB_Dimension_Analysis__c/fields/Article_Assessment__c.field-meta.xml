@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Article_Assessment__c</fullName>
+    <description>Denormalized lookup to the article assessment grandparent. Avoids joining through KB_Dimension_Result__c when the Action Center / remediation flow needs to query "all analyses for article X".</description>
+    <externalId>false</externalId>
+    <label>Article Assessment</label>
+    <referenceTo>KB_Article_Assessment__c</referenceTo>
+    <relationshipLabel>Dimension Analyses</relationshipLabel>
+    <relationshipName>Dimension_Analyses</relationshipName>
+    <required>false</required>
+    <trackTrending>false</trackTrending>
+    <type>Lookup</type>
+</CustomField>

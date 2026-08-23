@@ -1,0 +1,6 @@
+/* make the datatable fill the card width instead of sizing to the
+   sum of its (mostly fixed-width) columns. */
+.candidate-datatable {
+    display: block;
+    width: 100%;
+}

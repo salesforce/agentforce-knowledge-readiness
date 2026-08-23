@@ -1,0 +1,124 @@
+<template>
+    <lightning-card title={titleLabel} icon-name="utility:setup">
+        <div slot="actions" class="slds-grid slds-grid_vertical-align-center">
+            <lightning-button
+                variant="neutral"
+                label={refreshLabel}
+                icon-name="utility:refresh"
+                onclick={handleRefresh}
+                class="slds-m-right_x-small">
+            </lightning-button>
+            <lightning-button
+                variant="brand"
+                label={copyBundleLabel}
+                icon-name="utility:copy"
+                onclick={handleCopyBundle}>
+            </lightning-button>
+        </div>
+
+        <div class="slds-p-around_medium">
+            <p class="slds-text-body_small slds-text-color_weak slds-m-bottom_medium">
+                {subtitleLabel}
+                <template lwc:if={capturedAtLabel}>
+                    <span class="slds-m-left_small">· Captured {capturedAtLabel}</span>
+                </template>
+            </p>
+
+            <template lwc:if={isLoading}>
+                <div class="slds-align_absolute-center slds-p-around_large">
+                    <lightning-spinner alternative-text="Loading diagnostics..." size="medium"></lightning-spinner>
+                </div>
+            </template>
+
+            <template lwc:if={error}>
+                <div class="slds-notify slds-notify_alert slds-alert_error slds-m-bottom_medium" role="alert">
+                    <p>{error}</p>
+                </div>
+            </template>
+
+            <template lwc:if={snapshot}>
+                <!-- Preflight -->
+                <section class="slds-box slds-m-bottom_medium">
+                    <h3 class="slds-text-heading_small slds-m-bottom_small">{sectionPreflightLabel}</h3>
+                    <template for:each={preflightRows} for:item="check">
+                        <div key={check.key} class="check-row slds-grid slds-grid_vertical-align-center slds-m-bottom_x-small">
+                            <lightning-icon icon-name={check.icon} size="x-small" class={check.iconClass} aria-hidden="true"></lightning-icon>
+                            <div class="slds-m-left_small slds-grow">
+                                <div class="slds-text-title_bold">
+                                    {check.label}
+                                    <template lwc:if={check.helptext}>
+                                        <lightning-helptext content={check.helptext}></lightning-helptext>
+                                    </template>
+                                </div>
+                                <div class="slds-text-body_small slds-text-color_weak">{check.details}</div>
+                            </div>
+                        </div>
+                    </template>
+                </section>
+
+                <!-- Org limits -->
+                <section class="slds-box slds-m-bottom_medium">
+                    <h3 class="slds-text-heading_small slds-m-bottom_small">{sectionLimitsLabel}</h3>
+                    <template for:each={limitRows} for:item="row">
+                        <div key={row.apiName} class="limit-row slds-m-bottom_small">
+                            <div class="slds-grid slds-grid_align-spread slds-m-bottom_xx-small">
+                                <span class="slds-text-body_small slds-text-title_bold">{row.label}</span>
+                                <span class="slds-text-body_small slds-text-color_weak">{row.usedFormatted} / {row.limitFormatted} · {row.usedPct}%</span>
+                            </div>
+                            <lightning-progress-bar value={row.usedPct} size="small" variant={row.variant}></lightning-progress-bar>
+                        </div>
+                    </template>
+                </section>
+
+                <!-- Recent async failures -->
+                <section class="slds-box slds-m-bottom_medium">
+                    <h3 class="slds-text-heading_small slds-m-bottom_small">{sectionFailuresLabel}</h3>
+                    <template lwc:if={hasFailures}>
+                        <lightning-datatable
+                            key-field="jobId"
+                            data={failureRows}
+                            columns={failureColumns}
+                            hide-checkbox-column>
+                        </lightning-datatable>
+                    </template>
+                    <template lwc:else>
+                        <p class="slds-text-body_small slds-text-color_weak">{noFailuresLabel}</p>
+                    </template>
+                </section>
+
+                <!-- Runtime configuration -->
+                <section class="slds-box slds-m-bottom_medium">
+                    <h3 class="slds-text-heading_small slds-m-bottom_small">{sectionRuntimeLabel}</h3>
+                    <dl class="slds-dl_horizontal">
+                        <dt class="slds-dl_horizontal__label slds-text-color_weak">Vector provider</dt>
+                        <dd class="slds-dl_horizontal__detail">{runtimeRows.vectorProvider}</dd>
+                        <dt class="slds-dl_horizontal__label slds-text-color_weak">Search index</dt>
+                        <dd class="slds-dl_horizontal__detail">{runtimeRows.searchIndex}</dd>
+                        <dt class="slds-dl_horizontal__label slds-text-color_weak">Data Cloud reachable</dt>
+                        <dd class="slds-dl_horizontal__detail">{runtimeRows.dataCloudLabel}</dd>
+                        <dt class="slds-dl_horizontal__label slds-text-color_weak">Last run</dt>
+                        <dd class="slds-dl_horizontal__detail">{runtimeRows.lastRunLabel}</dd>
+                        <dt class="slds-dl_horizontal__label slds-text-color_weak">Setup completed</dt>
+                        <dd class="slds-dl_horizontal__detail">{runtimeRows.setupLabel}</dd>
+                    </dl>
+                </section>
+
+                <!-- Fallback textarea — shown only if clipboard copy failed so user can copy manually -->
+                <template lwc:if={showFallbackTextarea}>
+                    <section class="slds-box slds-m-bottom_medium">
+                        <h3 class="slds-text-heading_small slds-m-bottom_small">Manual Copy</h3>
+                        <p class="slds-text-body_small slds-text-color_weak slds-m-bottom_x-small">
+                            Clipboard access was blocked. Select the text below and copy it manually.
+                        </p>
+                        <lightning-textarea
+                            variant="label-hidden"
+                            label="Diagnostic Bundle"
+                            value={bundleJson}
+                            class="bundle-textarea">
+                        </lightning-textarea>
+                    </section>
+                </template>
+            </template>
+        </div>
+    </lightning-card>
+</template>

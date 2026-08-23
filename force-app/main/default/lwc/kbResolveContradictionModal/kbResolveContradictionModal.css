@@ -1,0 +1,8 @@
+.article-box {
+    min-height: 200px;
+}
+
+.article-summary {
+    max-height: 150px;
+    overflow-y: auto;
+}

@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomObject xmlns="http://soap.sforce.com/2006/04/metadata">
+    <deploymentStatus>Deployed</deploymentStatus>
+    <description>Off-core telemetry for Tier 1 exact match detection. Stores SHA-256 content hashes of published Knowledge articles to find exact duplicates without locking Knowledge__kav.</description>
+    <enableReports>false</enableReports>
+    <enableSearch>false</enableSearch>
+    <label>Article Telemetry</label>
+    <nameField>
+        <displayFormat>AT-{0000}</displayFormat>
+        <label>Telemetry Number</label>
+        <type>AutoNumber</type>
+    </nameField>
+    <pluralLabel>Article Telemetry</pluralLabel>
+    <sharingModel>ReadWrite</sharingModel>
+</CustomObject>

@@ -1,0 +1,19 @@
+.template-row:last-child {
+    border-bottom: none !important;
+}
+
+.icon-success {
+    --slds-c-icon-color-foreground-default: #2e844a;
+}
+
+.icon-error {
+    --slds-c-icon-color-foreground-default: #c23934;
+}
+
+.slds-text-color_success {
+    color: #2e844a;
+}
+
+.slds-text-color_error {
+    color: #c23934;
+}

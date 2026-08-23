@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Cancelled_By__c</fullName>
+    <description>User who requested cancellation of this run via cancelAssessmentRun. Audit trail surfaced on the History tab.</description>
+    <externalId>false</externalId>
+    <label>Cancelled By</label>
+    <referenceTo>User</referenceTo>
+    <relationshipLabel>Cancelled Assessment Runs</relationshipLabel>
+    <relationshipName>Cancelled_Assessment_Runs</relationshipName>
+    <required>false</required>
+    <trackTrending>false</trackTrending>
+    <type>Lookup</type>
+</CustomField>

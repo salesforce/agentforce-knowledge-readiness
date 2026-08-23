@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Is_Unassessable__c</fullName>
+    <defaultValue>false</defaultValue>
+    <description>True when scoring could not run (e.g. article has no content body for Structure/Clarity). Score__c is null in that case.</description>
+    <externalId>false</externalId>
+    <label>Is Unassessable</label>
+    <trackTrending>false</trackTrending>
+    <type>Checkbox</type>
+</CustomField>

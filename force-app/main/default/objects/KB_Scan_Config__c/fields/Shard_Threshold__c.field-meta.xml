@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Shard_Threshold__c</fullName>
+    <defaultValue>51</defaultValue>
+    <description>Routing (Batch tier only): at or above this article count the Batch Apex scoring run is split into parallel shards (up to Max_Scoring_Shards__c concurrent batch jobs) instead of one serial batch. Below it, a single batch runs. Default 51 shards any run that reaches the Batch tier (runs of 50 or fewer use the queueable tier). The 5-job overhead is negligible, so shard aggressively for speed; raise this toward 100+ if your org runs many concurrent batch jobs and you want mid-size runs to hold a single batch slot. Blank/0 falls back to 51.</description>
+    <externalId>false</externalId>
+    <label>Shard Threshold (articles)</label>
+    <precision>6</precision>
+    <required>false</required>
+    <scale>0</scale>
+    <trackTrending>false</trackTrending>
+    <type>Number</type>
+    <unique>false</unique>
+</CustomField>

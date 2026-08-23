@@ -1,0 +1,22 @@
+.slds-box {
+    min-height: 84px;
+}
+
+.error-banner {
+ /* thin border on near-white needs 3:1 (1.4.11)— bright amber fails there,
+       so use the darker warning amber #8c4b02 which passes and still reads amber. */
+    background-color: #fffbf0;
+    border: 1px solid #8c4b02;
+    border-radius: 0.25rem;
+    padding: 0.75rem 1rem;
+}
+
+.error-list {
+    padding-left: 1.5rem;
+    margin-bottom: 0;
+    color: #080707;
+}
+
+.error-list li {
+    margin-bottom: 0.25rem;
+}

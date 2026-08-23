@@ -1,0 +1,74 @@
+<template>
+    <template lwc:if={isLoading}>
+        <lightning-spinner alternative-text="Loading enrichment candidates..."></lightning-spinner>
+    </template>
+
+    <template lwc:if={error}>
+        <p class="slds-text-color_error slds-p-around_small">{error}</p>
+    </template>
+
+    <template lwc:if={hasData}>
+        <!-- Summary Cards -->
+        <div class="slds-grid slds-wrap slds-gutters_small slds-m-bottom_medium">
+            <template for:each={summaryCards} for:item="card">
+                <div key={card.label} class="slds-col slds-size_1-of-4">
+                    <div class="slds-box slds-box_x-small slds-text-align_center">
+                        <p class="slds-text-title_caps slds-m-bottom_xx-small">{card.label}</p>
+                        <p class="slds-text-heading_small">{card.value}</p>
+                    </div>
+                </div>
+            </template>
+        </div>
+
+        <!-- Bulk Actions -->
+        <div class="slds-m-bottom_small">
+            <lightning-button
+                label="Approve Selected"
+                variant="brand"
+                disabled={bulkDisabled}
+                onclick={handleApproveSelected}
+                class="slds-m-right_x-small"
+            ></lightning-button>
+            <lightning-button
+                label="Reject Selected"
+                disabled={bulkDisabled}
+                onclick={handleRejectSelected}
+            ></lightning-button>
+        </div>
+
+        <!-- Error Banner -->
+        <template lwc:if={hasFailedResults}>
+            <div class="slds-notify slds-notify_alert slds-alert_warning slds-m-bottom_small error-banner" role="alert">
+                <div class="slds-grid slds-grid_vertical-align-center">
+                    <lightning-icon icon-name="utility:warning" variant="warning" size="x-small" class="slds-m-right_x-small"></lightning-icon>
+                    <span class="slds-grow">{failedResultsSummary}</span>
+                    <lightning-button-icon icon-name="utility:close" alternative-text="Dismiss" variant="bare-inverse" onclick={dismissErrors}></lightning-button-icon>
+                </div>
+                <ul class="slds-list_dotted slds-m-top_x-small error-list">
+                    <template for:each={failedResults} for:item="failure">
+                        <li key={failure.candidateId}><strong>{failure.title}</strong>: {failure.message}</li>
+                    </template>
+                </ul>
+            </div>
+        </template>
+
+        <!-- Data Table -->
+        <lightning-datatable
+            key-field="proposalId"
+            data={inboxData.candidates}
+            columns={columns}
+            onrowaction={handleRowAction}
+            onrowselection={handleRowSelection}
+            show-row-number-column
+        ></lightning-datatable>
+    </template>
+
+    <template lwc:if={isEmpty}>
+        <div class="slds-align_absolute-center slds-p-around_large">
+            <div class="slds-text-align_center">
+                <lightning-icon icon-name="utility:success" variant="success" size="large" class="slds-m-bottom_small"></lightning-icon>
+                <p class="slds-text-heading_small">No open enrichment candidates.</p>
+            </div>
+        </div>
+    </template>
+</template>

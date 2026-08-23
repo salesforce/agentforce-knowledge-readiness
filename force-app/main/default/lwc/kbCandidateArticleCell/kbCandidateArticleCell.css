@@ -1,0 +1,57 @@
+.cell-wrapper {
+    position: relative;
+    display: block;
+    max-width: 100%;
+    overflow: hidden;
+}
+
+.article-link {
+    color: #0176d3;
+    text-decoration: none;
+    /* Single-line truncation with ellipsis when the parent table cell is
+       capped. Full title still surfaces via the link's `title` attribute
+       (browser tooltip) and the on-hover popover. */
+    display: inline-block;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    vertical-align: bottom;
+}
+
+/* multi-line variant— let long titles wrap across lines in the narrower
+   Article A/B columns instead of clipping to one line. Breaks long unspaced
+   tokens so a single long word can't force horizontal overflow. */
+.article-link_wrap {
+    white-space: normal;
+    overflow: visible;
+    /* No text-overflow here: it only fires with overflow:hidden + white-space:nowrap,
+       and this variant wraps (white-space:normal), so any text-overflow value is a no-op. */
+    overflow-wrap: anywhere;
+}
+
+.article-link:hover,
+.article-link:focus {
+    text-decoration: underline;
+}
+
+.article-popover {
+    position: absolute;
+    top: 1.5rem;
+    left: 0;
+    z-index: 9000;
+    min-width: 20rem;
+    max-width: 28rem;
+    background: #ffffff;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+    border: 1px solid #dddbda;
+    border-radius: 0.25rem;
+}
+
+.summary-snippet {
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    color: #3e3e3c;
+}

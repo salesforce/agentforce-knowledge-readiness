@@ -1,0 +1,24 @@
+<template>
+    <lightning-modal-header label="Not a Duplicate"></lightning-modal-header>
+    <lightning-modal-body>
+        <p class="slds-m-bottom_small slds-text-color_weak">
+            Marking this pair as not a duplicate removes it from the queue for now. It may re-surface on the next
+            assessment.
+        </p>
+        <lightning-textarea
+            label="Reason (optional)"
+            placeholder="Why is this not a duplicate? This feedback helps improve future detection."
+            value={rejectionReason}
+            onchange={handleReasonChange}
+        ></lightning-textarea>
+    </lightning-modal-body>
+    <lightning-modal-footer>
+        <lightning-button label="Cancel" onclick={handleCancel}></lightning-button>
+        <lightning-button
+            label="Not a Duplicate"
+            variant="brand"
+            onclick={handleConfirm}
+            class="slds-m-left_x-small"
+        ></lightning-button>
+    </lightning-modal-footer>
+</template>

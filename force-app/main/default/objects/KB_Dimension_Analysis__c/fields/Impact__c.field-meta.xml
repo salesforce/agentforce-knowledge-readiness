@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Impact__c</fullName>
+    <description>LLM-judged impact of fixing this issue on overall article quality. High = fixing this materially improves the article; Low = nice-to-have. Populated for Issue records on LLM-driven dimensions; null for Strength records and for dimensions whose effort/priority still come from heuristics.</description>
+    <externalId>false</externalId>
+    <inlineHelpText>How much resolving this issue is expected to improve article quality.</inlineHelpText>
+    <label>Impact</label>
+    <required>false</required>
+    <trackTrending>false</trackTrending>
+    <type>Picklist</type>
+    <valueSet>
+        <restricted>true</restricted>
+        <valueSetDefinition>
+            <sorted>false</sorted>
+            <value>
+                <fullName>High</fullName>
+                <default>false</default>
+                <label>High</label>
+            </value>
+            <value>
+                <fullName>Medium</fullName>
+                <default>false</default>
+                <label>Medium</label>
+            </value>
+            <value>
+                <fullName>Low</fullName>
+                <default>false</default>
+                <label>Low</label>
+            </value>
+        </valueSetDefinition>
+    </valueSet>
+</CustomField>

@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Uses_Data_Categories__c</fullName>
+    <defaultValue>false</defaultValue>
+    <description>When true, articles without data categories are scored as a Completeness issue. When false, missing categories are informational only. Reflects whether data categories are part of the org's Knowledge governance (visibility, scoped retrieval), not a property of any specific retriever.</description>
+    <externalId>false</externalId>
+    <inlineHelpText>Turn on if your Knowledge implementation uses data categories. When on, articles without a category will be flagged as incomplete. When off, missing categories are noted but not penalised.</inlineHelpText>
+    <label>Do you use data categories</label>
+    <trackTrending>false</trackTrending>
+    <type>Checkbox</type>
+</CustomField>

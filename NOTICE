@@ -1,0 +1,35 @@
+Agentforce Knowledge Readiness Evaluator
+Copyright (c) 2026 Salesforce, Inc.
+
+This product includes software developed at Salesforce (https://www.salesforce.com/).
+
+Licensed under the Apache License, Version 2.0. See LICENSE.txt for the full text.
+
+------------------------------------------------------------------------------
+Third-party components
+------------------------------------------------------------------------------
+
+This project ships no bundled runtime dependencies — it is a Salesforce DX
+metadata project deployed into a Salesforce org, and all AI/search capabilities
+are provided by the target org's Einstein and Data Cloud platform services.
+
+The following development-only dependencies are used for linting, formatting,
+and testing (see package.json for exact versions). They are not distributed as
+part of the deployed application:
+
+  - @salesforce/sfdx-lwc-jest          — BSD-3-Clause
+  - @salesforce/eslint-config-lwc      — MIT
+  - @salesforce/eslint-plugin-aura     — MIT
+  - @salesforce/eslint-plugin-lightning — MIT
+  - @lwc/eslint-plugin-lwc             — MIT
+  - eslint                             — MIT
+  - eslint-plugin-import               — MIT
+  - eslint-plugin-jest                 — MIT
+  - prettier                           — MIT
+  - prettier-plugin-apex               — MIT
+  - @prettier/plugin-xml               — MIT
+  - husky                              — MIT
+  - lint-staged                        — MIT
+
+Each dependency remains under its own license; consult the respective package
+for its full license text.

@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<LightningComponentBundle xmlns="http://soap.sforce.com/2006/04/metadata">
+    <apiVersion>65.0</apiVersion>
+    <isExposed>false</isExposed>
+    <masterLabel>KB Article Selector Content Cell</masterLabel>
+    <description>Custom datatable cell that clamps content-field values to ~5 lines with a Show more toggle.</description>
+</LightningComponentBundle>

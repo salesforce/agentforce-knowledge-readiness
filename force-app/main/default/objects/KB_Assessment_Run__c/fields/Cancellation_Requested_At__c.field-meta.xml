@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Cancellation_Requested_At__c</fullName>
+    <description>Timestamp when a user requested cancellation of this run via cancelAssessmentRun. Stamped before the abortJob loop runs, so it lets the UI show a "Cancelling..." state between request and the next status read.</description>
+    <externalId>false</externalId>
+    <label>Cancellation Requested At</label>
+    <required>false</required>
+    <trackTrending>false</trackTrending>
+    <type>DateTime</type>
+</CustomField>

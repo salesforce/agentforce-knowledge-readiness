@@ -1,0 +1,102 @@
+:host {
+    display: block;
+}
+
+/* assessment-name eyebrow above the heading. Larger than the default
+   title-caps so the user-set name reads clearly, with a touch more letter
+   spacing to keep the all-caps treatment legible. */
+.assessment-eyebrow {
+    font-size: 0.875rem;
+    font-weight: 700;
+    letter-spacing: 0.0625rem;
+}
+
+/* Align action buttons (Clear / Add / Apply Filters) with the bottom of the
+   adjacent labelled inputs. The inputs carry a form label above the box, so
+   the button needs a top margin equal to that label's height to line its
+   baseline up with the input box rather than the label row. */
+.filter-action-btn {
+    margin-top: 1.8rem;
+}
+
+/* destructive (red) treatment on the per-clause remove icon. */
+.clause-remove-btn {
+    --slds-c-icon-color-foreground-default: var(--slds-g-color-error-base-40, #ba0517);
+}
+
+.slds-illustration {
+    padding: 2rem;
+    text-align: center;
+}
+
+/* basket variant: results table on the left, basket pane on
+   the right, with a thin divider column between them. The 320px
+   sidebar width is narrow enough that the page-level search filters above
+   stay readable, and wide enough to fit Article Number + a wrapping Title
+   plus the remove icon. Collapses to a single column on narrow viewports.
+   minmax(0, 1fr) instead of 1fr so the left datatable can shrink below
+   its min-content width and scroll internally — without it, orgs with
+   many content-field columns mapped push the basket off-screen. */
+.selector-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto 320px;
+    gap: var(--lwc-spacingMedium, 1rem);
+}
+
+/* collapsed: the basket pane isn't rendered, so drop its track to a
+   zero-width column and let the results table reclaim the freed space. The
+   divider column stays (auto) so the re-open control remains reachable. */
+.selector-grid_collapsed {
+    grid-template-columns: minmax(0, 1fr) auto 0;
+}
+
+@media (max-width: 768px) {
+    .selector-grid,
+    .selector-grid_collapsed {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* split-view separator hosting the collapse/expand control. A thin
+   vertical rule with the toggle centred on it, sticky so the control stays
+   in view while the results table scrolls. */
+.selector-divider {
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    position: sticky;
+    top: 1rem;
+    border-left: 1px solid var(--slds-g-color-border-base-1, #e5e5e5);
+    padding-left: 0.25rem;
+}
+
+.basket-toggle-btn {
+    margin-top: 0.25rem;
+}
+
+@media (max-width: 768px) {
+    .selector-divider {
+        position: static;
+        justify-content: flex-end;
+        border-left: none;
+        padding-left: 0;
+    }
+}
+
+/* Sticky + internally-scrolling basket so a long hand-picked selection
+   scrolls within the pane rather than growing the whole page. Falls back
+   to static positioning on narrow viewports where the grid stacks. */
+.basket-pane {
+    min-width: 0; /* allow flex/grid children to shrink past their min-content */
+    max-height: calc(100vh - 8rem);
+    overflow-y: auto;
+    position: sticky;
+    top: 1rem;
+}
+
+@media (max-width: 768px) {
+    .basket-pane {
+        position: static;
+        max-height: none;
+    }
+}

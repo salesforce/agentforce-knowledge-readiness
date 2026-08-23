@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Default_Execution_Mode__c</fullName>
+    <description>Default mode for the staircase pipeline.</description>
+    <defaultValue>'DEDUPLICATION'</defaultValue>
+    <externalId>false</externalId>
+    <label>Default Execution Mode</label>
+    <length>40</length>
+    <required>false</required>
+    <type>Text</type>
+</CustomField>

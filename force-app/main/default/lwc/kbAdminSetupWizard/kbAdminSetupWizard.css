@@ -1,0 +1,40 @@
+:host {
+    display: block;
+}
+
+.step-labels {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 0.5rem;
+}
+
+.step-label {
+    /* 1. Lock the width absolutely to match the SLDS dot */
+    width: 1rem;
+    min-width: 1rem;
+    max-width: 1rem;
+    flex-shrink: 0; 
+    
+    /* 2. Center the text over this invisible 1rem anchor */
+    display: flex;
+    justify-content: center;
+    
+    /* 3. Keep text on one line and allow it to bleed out evenly */
+    white-space: nowrap;
+    overflow: visible;
+    
+    font-size: 0.70rem;
+    color: #706e6b;
+    cursor: pointer;
+}
+
+.step-label_active {
+    font-weight: 700;
+    color: #0070d2;
+}
+
+.wizard-body {
+    max-height: 70vh;
+    overflow-y: auto;
+    position: relative;
+}

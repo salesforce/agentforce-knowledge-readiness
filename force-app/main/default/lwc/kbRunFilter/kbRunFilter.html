@@ -1,0 +1,47 @@
+<template>
+ <!--— searchable run filter (variant B): combobox-style trigger that
+         opens a panel with a search field pinned on top and the filtered,
+         rich-label run list below. "All assessments" is pinned + resets. -->
+    <div class="panel-anchor" onfocusout={handleBlur} onkeydown={handleKeydown}>
+        <button
+            type="button"
+            class="slds-button slds-button_neutral slds-truncate trigger-btn"
+            onclick={toggle}
+            title={triggerLabel}
+            aria-haspopup="listbox"
+            aria-expanded={open}
+        >
+            <span class="slds-truncate">{triggerLabel}</span>
+            <lightning-icon icon-name="utility:down" size="xx-small"></lightning-icon>
+        </button>
+        <template lwc:if={open}>
+            <div class="slds-dropdown slds-dropdown_left slds-dropdown_fluid panel-open" role="listbox">
+                <div class="slds-p-around_x-small slds-border_bottom">
+                    <lightning-input
+                        type="search"
+                        variant="label-hidden"
+                        placeholder="Type to filter…"
+                        value={search}
+                        onchange={handleSearch}
+                        oninput={handleSearch}
+                    ></lightning-input>
+                </div>
+                <ul class="slds-listbox slds-listbox_vertical scroll-panel" role="presentation">
+                    <template for:each={options} for:item="opt">
+                        <li key={opt.key} role="presentation" class="slds-listbox__item">
+                            <div
+                                class={opt.optionClass}
+                                role="option"
+                                aria-selected={opt.ariaSelected}
+                                data-runid={opt.value}
+                                onmousedown={handlePick}
+                            >
+                                <span class="slds-truncate" title={opt.label}>{opt.label}</span>
+                            </div>
+                        </li>
+                    </template>
+                </ul>
+            </div>
+        </template>
+    </div>
+</template>

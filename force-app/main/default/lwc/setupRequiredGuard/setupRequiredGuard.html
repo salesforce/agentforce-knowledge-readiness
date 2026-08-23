@@ -1,0 +1,21 @@
+<template>
+    <div class="slds-illustration slds-illustration_small slds-p-around_xx-large">
+        <div class="slds-illustration__svg">
+            <lightning-icon icon-name="utility:lock" size="large" class="slds-illustration__svg"></lightning-icon>
+        </div>
+        <div class="slds-illustration__figure slds-m-top_medium">
+            <h3 class="slds-text-heading_medium">Setup Required</h3>
+            <p class="slds-text-body_regular slds-m-top_x-small slds-text-color_weak">
+                Complete the Assessment Setup before using this page.
+            </p>
+            <div class="slds-m-top_medium">
+                <lightning-button
+                    label="Go to Assessment Setup"
+                    variant="brand"
+                    icon-name="utility:setup"
+                    onclick={handleGoToSetup}>
+                </lightning-button>
+            </div>
+        </div>
+    </div>
+</template>

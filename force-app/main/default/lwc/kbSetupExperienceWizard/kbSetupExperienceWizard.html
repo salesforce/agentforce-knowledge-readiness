@@ -1,0 +1,270 @@
+<template>
+    <lightning-card title="Setup Experience Wizard" icon-name="utility:setup">
+ <!-- Opportunity-path-style stepper: named stages matching the
+             new-assessment modal. Read-only — the path is a progress display;
+             navigation is via the sticky footer (Next/Previous) only, so the
+             steps carry no click handler (see .setup-path pointer-events). -->
+        <div class="slds-p-horizontal_medium slds-p-top_small setup-path">
+            <lightning-progress-indicator current-step={currentStep} type="path" variant="base">
+                <template for:each={steps} for:item="step">
+                    <lightning-progress-step
+                        key={step.value}
+                        value={step.value}
+                        label={step.label}>
+                    </lightning-progress-step>
+                </template>
+            </lightning-progress-indicator>
+        </div>
+
+        <div class="wizard-body slds-p-around_medium">
+            <template if:true={isLoading}>
+                <div class="slds-align_absolute-center slds-p-around_large">
+                    <lightning-spinner alternative-text="Loading setup wizard..." size="medium"></lightning-spinner>
+                </div>
+            </template>
+
+            <template if:false={isLoading}>
+                <!-- STEP 1: Welcome & Prerequisites -->
+                <template if:true={isStep1}>
+                    <h2 class="slds-text-heading_medium slds-m-bottom_small">Welcome</h2>
+                    <p class="slds-m-bottom_small">
+                        This setup flow configures Knowledge readiness scoring, runtime retrieval, and validation for your org.
+                    </p>
+ <!--: reassure first-run users that they only have to set
+                         the mandatory Essentials — everything else has sensible
+                         defaults. -->
+                    <div class="slds-box slds-box_x-small slds-theme_shade slds-m-bottom_medium">
+                        <p class="slds-text-body_small">
+                            <lightning-icon icon-name="utility:info" size="xx-small" class="slds-m-right_xx-small" aria-hidden="true"></lightning-icon>
+                            <strong>Sensible defaults are pre-configured.</strong> If you're unsure, accept the defaults and continue — the only things you must set are your <strong>content fields</strong> and your <strong>search index</strong>. Everything else lives under <strong>Advanced</strong> and is optional.
+                        </p>
+                    </div>
+                    <p class="slds-text-body_small slds-text-color_weak slds-m-bottom_small">
+                        Click <strong>Next</strong> to begin. The final step (<strong>Validate &amp; Save</strong>) reports on org-readiness checks (Data Cloud, search index, content fields, published articles, bypass permission) so you can verify everything is wired up before running your first scan.
+                    </p>
+
+ <!-- Permission Sets: explains the 3 shipped permsets and
+                         calls out the platform prerequisites (Data Cloud / Prompt
+                         Template user). Informational only — actual assignment is
+                         done in Setup → Permission Sets → Manage Assignments. -->
+                    <c-kb-setup-permissions class="slds-m-top_medium"></c-kb-setup-permissions>
+                </template>
+
+ <!-- STEP 2: Essentials— the single mandatory config
+                     screen. Content fields + data categories + search index/ADL
+                     are always rendered; everything else is progressive-disclosed
+                     under the Advanced accordion, collapsed by default. Save &
+                     finish is reachable without opening Advanced. -->
+                <template if:true={isStep2}>
+                    <h2 class="slds-text-heading_medium slds-m-bottom_small">Essentials</h2>
+                    <p class="slds-text-body_small slds-text-color_weak slds-m-bottom_medium">
+                        These are the only things you must configure. Sensible defaults cover the rest — open <strong>Advanced</strong> below only if you want to fine-tune scoring or the deduplication pipeline.
+                    </p>
+
+                    <!-- (a) Content fields. The child owns its own L2 heading
+                         ("Article Content Fields"); the .setup-section wrapper
+                         gives it the same rhythm/divider as the sibling areas. -->
+                    <div class="setup-section">
+                        <c-kb-setup-content-field-mapping
+                            selected-fields={contentFieldMapping}
+                            onfieldmappingchange={handleFieldMappingChange}>
+                        </c-kb-setup-content-field-mapping>
+                    </div>
+
+                    <!-- (b) Data categories -->
+                    <div class="setup-section">
+                        <h3 class="slds-text-heading_small slds-m-bottom_x-small">Data categories</h3>
+                        <lightning-input
+                            type="checkbox"
+                            label="My articles use data categories"
+                            checked={usesDataCategories}
+                            onchange={handleUsesDataCategoriesChange}
+                            field-level-help="Turn this on if your articles are tagged with data categories. When it's on, an article with no data category loses Completeness points. When it's off, a missing data category is just noted for your information and does not lower the score.">
+                        </lightning-input>
+                        <div class="slds-box slds-box_x-small slds-theme_info slds-m-top_x-small">
+                            <p class="slds-text-body_small">
+                                <lightning-icon icon-name="utility:info" size="xx-small" class="slds-m-right_xx-small" aria-hidden="true"></lightning-icon>
+                                On: articles with no data category lose Completeness points.
+                                Off: a missing data category is informational only and does not affect the score.
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- (c) Search index + ADL flag. The parent owns the L2
+                         heading; the child renders its controls without a
+                         duplicate title (embedded mode). -->
+                    <div class="setup-section">
+                        <h3 class="slds-text-heading_small slds-m-bottom_x-small">Search index</h3>
+                        <p class="slds-text-body_small slds-text-color_weak slds-m-bottom_small">
+                            Select the Data Cloud search index semantic deduplication uses, and tell us whether it is an Agentforce Data Library.
+                        </p>
+                        <c-kb-setup-vector-search config={vectorConfig} embedded hide-max-results onconfigchange={handleVectorConfigChange}></c-kb-setup-vector-search>
+                    </div>
+
+ <!-- Advanced accordion— collapsed by default. Houses
+                         the former Assessment Rules (scan config + score weights),
+                         the Duplicate-Detection / pipeline knobs (incl. the
+                         similarity threshold), and the prompt-template links. All
+                         optional; Save & finish works without opening this. -->
+                    <div class="advanced-drawer slds-m-top_large">
+                        <button class="advanced-drawer__toggle slds-button slds-button_neutral slds-button_full-width"
+                                onclick={toggleAdvanced}
+                                type="button">
+                            <lightning-icon
+                                icon-name={advancedIcon}
+                                size="xx-small"
+                                class="slds-m-right_x-small"
+                                aria-hidden="true">
+                            </lightning-icon>
+                            Advanced (optional)
+                        </button>
+                        <template if:true={isAdvancedOpen}>
+                            <div class="advanced-drawer__content slds-p-around_medium">
+                                <p class="slds-text-body_small slds-text-color_weak slds-m-bottom_medium">
+                                    Fine-tune scoring thresholds, dimension weights, and the deduplication pipeline. Every field here has a working default — changes are optional.
+                                </p>
+                                <!-- Each advanced group is an equal-weight card so
+                                     they read as sibling subsections of Advanced
+                                     with clear separation between them. -->
+                                <div class="slds-m-bottom_medium">
+                                    <c-kb-setup-scan-config config={scanConfig} onconfigchange={handleScanConfigChange}></c-kb-setup-scan-config>
+                                </div>
+                                <div class="slds-m-bottom_medium">
+                                    <c-kb-setup-score-weights weights={scoreWeights} onweightschange={handleWeightsChange}></c-kb-setup-score-weights>
+                                </div>
+ <!-- Duplicate Detection. Carries the chunk-level
+                                     similarity threshold, and (when the user holds
+                                     KB_PrePublishCheck_Beta) a "Pre-publish check"
+                                     subsection for the record-page draft scan's
+                                     top-K. That value lives on vectorConfig, so it
+                                     comes back on a separate event and saves via the
+                                     vector path. -->
+                                <div class="slds-m-bottom_medium">
+                                    <c-kb-setup-pipeline-config
+                                        config={pipelineConfig}
+                                        show-prepublish={showMaxResults}
+                                        prepublish-top-k={vectorMaxResults}
+                                        help-prepublish-top-k={helpPrepublishTopK}
+                                        onconfigchange={handlePipelineConfigChange}
+                                        onprepublishtopkchange={handleMaxResultsChange}>
+                                    </c-kb-setup-pipeline-config>
+                                </div>
+                                <lightning-tabset>
+                                    <lightning-tab label="Prompt Templates">
+                                        <c-kb-setup-prompt-editor></c-kb-setup-prompt-editor>
+                                    </lightning-tab>
+                                </lightning-tabset>
+                            </div>
+                        </template>
+                    </div>
+                </template>
+
+                <!-- STEP 3: Validate & Save -->
+                <template if:true={isStep3}>
+                    <h2 class="slds-text-heading_medium slds-m-bottom_small">Validate &amp; Save</h2>
+                    <p class="slds-text-body_small slds-text-color_weak slds-m-bottom_medium">
+                        Confirm setup readiness and review any remaining manual tasks.
+                    </p>
+
+                    <!-- Success banner — shown after setup is confirmed complete -->
+                    <template lwc:if={isSetupComplete}>
+                        <div class="slds-notify slds-notify_alert slds-theme_success slds-m-bottom_medium" role="alert">
+                            <lightning-icon icon-name="utility:success" size="small" class="slds-m-right_small" variant="inverse"></lightning-icon>
+                            <span class="slds-text-heading_small">Setup complete! Your Assessment is ready to use.</span>
+                            <div class="slds-m-top_x-small slds-text-body_small">
+                                You can return to this wizard at any time to adjust configuration.
+                            </div>
+                        </div>
+                        <div class="slds-box slds-m-bottom_medium">
+                            <h3 class="slds-text-heading_small slds-m-bottom_small">Next Steps</h3>
+                            <ol class="slds-list_ordered slds-text-body_small">
+                                <li class="slds-m-bottom_xx-small">Assign <strong>{permsetAdminName}</strong> permission set to your Knowledge Managers</li>
+                                <li class="slds-m-bottom_xx-small">Assign <strong>{permsetViewerName}</strong> permission set to executives and stakeholders</li>
+                                <li class="slds-m-bottom_xx-small">Navigate to <strong>Assessments</strong> to run your first assessment</li>
+                            </ol>
+                        </div>
+ <!--: the "Go to Assessments" CTA lives solely on the
+                             sticky footer now (driven by primaryCta, and access-gated
+                             so a Setup-Admin-only user gets a "Done" instead of a
+                             dead-end nav). The former duplicate banner button here
+                             was removed. -->
+                    </template>
+
+ <!-- Always-on Re-run Validation affordance.
+                         The footer's primary CTA still drives initial validation
+                         and post-pass dashboard navigation; this button is
+                         always available so admins can re-validate after
+                         editing config — including post-completion. -->
+                    <div class="slds-m-bottom_medium">
+                        <lightning-button
+                            label={rerunValidationLabel}
+                            variant="neutral"
+                            icon-name="utility:refresh"
+                            onclick={handleRunFinalValidation}>
+                        </lightning-button>
+                    </div>
+
+                    <template if:true={hasFinalValidations}>
+                        <template for:each={finalValidations} for:item="validation">
+                            <div key={validation.key} class="check-row slds-grid slds-grid_vertical-align-start slds-m-bottom_x-small">
+                                <lightning-icon icon-name={validation.icon} size="x-small" class={validation.iconClass} aria-hidden="true"></lightning-icon>
+                                <div class="slds-m-left_small slds-grow">
+                                    <div class="slds-text-title_bold">
+                                        {validation.label}
+                                        <template lwc:if={validation.helptext}>
+                                            <lightning-helptext content={validation.helptext}></lightning-helptext>
+                                        </template>
+                                    </div>
+                                    <div class="slds-text-body_small slds-text-color_weak">{validation.details}</div>
+                                </div>
+                                <template lwc:if={validation.hasCta}>
+                                    <div class="slds-shrink-none slds-m-left_small">
+                                        <lightning-button
+                                            variant="base"
+                                            label={validation.ctaLabel}
+                                            data-target={validation.ctaTarget}
+                                            onclick={handleCheckCta}>
+                                        </lightning-button>
+                                    </div>
+                                </template>
+                            </div>
+                        </template>
+                        <template lwc:if={hasValidationFailures}>
+                            <p class="slds-text-body_small slds-text-color_error slds-m-top_small">
+                                Resolve the failed checks above, then run validation again using the button below.
+                            </p>
+                        </template>
+                    </template>
+                    <template if:true={hasManualTasks}>
+                        <h3 class="slds-text-heading_small slds-m-top_medium slds-m-bottom_small">Manual Tasks</h3>
+                        <template for:each={manualTasks} for:item="task">
+                            <div key={task.key} class="slds-m-bottom_x-small">
+                                <lightning-input
+                                    type="checkbox"
+                                    label={task.title}
+                                    checked={task.checked}
+                                    data-task-key={task.key}
+                                    onchange={handleManualTaskToggle}>
+                                </lightning-input>
+                                <span class="slds-text-body_small slds-text-color_weak slds-m-left_large">{task.details}</span>
+                            </div>
+                        </template>
+                    </template>
+                </template>
+            </template>
+        </div>
+
+        <div slot="footer" class="slds-p-horizontal_none">
+            <c-kb-sticky-wizard-footer
+                primary-label={primaryCta.label}
+                primary-variant={primaryCta.variant}
+                primary-icon-name={primaryCta.iconName}
+                is-primary-disabled={primaryCta.disabled}
+                is-previous-disabled={isFirstStep}
+                show-dirty-badge={isCurrentStepDirty}
+                onprevious={handlePreviousClicked}
+                onprimary={handlePrimaryCtaClicked}>
+            </c-kb-sticky-wizard-footer>
+        </div>
+    </lightning-card>
+</template>

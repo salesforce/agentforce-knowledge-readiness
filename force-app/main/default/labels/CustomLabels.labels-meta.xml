@@ -1,0 +1,776 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomLabels xmlns="http://soap.sforce.com/2006/04/metadata">
+    <labels>
+        <fullName>KB_Helptext_Dim_Completeness</fullName>
+        <categories>kb-readiness,helptext,scoring-dimension</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Completeness dimension helptext</shortDescription>
+        <value>Does the article contain enough information for an agent to answer the question? Checks title, summary, data categories, and body depth.</value>
+    </labels>
+    <labels>
+        <fullName>KB_Helptext_Dim_Structure</fullName>
+        <categories>kb-readiness,helptext,scoring-dimension</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Structure dimension helptext</shortDescription>
+        <value>Is the article formatted so a retrieval model can chunk it cleanly? Checks headings, length, Q&amp;A form, links, and orphaned lists.</value>
+    </labels>
+    <labels>
+        <fullName>KB_Helptext_Dim_Clarity</fullName>
+        <categories>kb-readiness,helptext,scoring-dimension</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Clarity dimension helptext</shortDescription>
+        <value>How easily an agent can understand the article. Checks jargon, passive voice, and ambiguous pronouns (this, that).</value>
+    </labels>
+    <labels>
+        <fullName>KB_Helptext_Dim_Freshness</fullName>
+        <categories>kb-readiness,helptext,scoring-dimension</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Freshness dimension helptext</shortDescription>
+        <value>How recently the article was updated. Older articles risk containing outdated information — this score decays with age.</value>
+    </labels>
+    <labels>
+        <fullName>KB_Helptext_Dim_Duplication</fullName>
+        <categories>kb-readiness,helptext,scoring-dimension</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Duplication dimension helptext</shortDescription>
+        <value>Does this article overlap with others in the KB? Scored from the deduplication pipeline — articles with near-duplicates score lower.</value>
+    </labels>
+    <labels>
+        <fullName>KB_Helptext_Dim_Conflict</fullName>
+        <categories>kb-readiness,helptext,scoring-dimension</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Conflict dimension helptext</shortDescription>
+        <value>Does this article contradict another in the KB? Scored from the deduplication pipeline — contradictions confuse agents and lower the score.</value>
+    </labels>
+    <labels>
+        <fullName>KB_Helptext_Overall_Score</fullName>
+        <categories>kb-readiness,helptext,scoring</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Overall readiness score helptext</shortDescription>
+        <value>Weighted 0–100 score across all 6 scoring dimensions. 80+ is Ready, 50–79 is Needs Work, below 50 is Not Ready.</value>
+    </labels>
+    <labels>
+        <fullName>KB_Helptext_Filter_Contains</fullName>
+        <categories>kb-readiness,helptext,article-selector</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Contains operator helptext</shortDescription>
+        <value>Matches articles where the field value includes the search term anywhere (case-insensitive).</value>
+    </labels>
+    <labels>
+        <fullName>KB_Helptext_Filter_StartsWith</fullName>
+        <categories>kb-readiness,helptext,article-selector</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Starts With operator helptext</shortDescription>
+        <value>Matches articles where the field value begins with the search term (case-insensitive).</value>
+    </labels>
+    <labels>
+        <fullName>KB_Helptext_Filter_Equals</fullName>
+        <categories>kb-readiness,helptext,article-selector</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Equals operator helptext</shortDescription>
+        <value>Matches articles where the field value is exactly the search term.</value>
+    </labels>
+    <labels>
+        <fullName>KB_Helptext_Filter_DateGte</fullName>
+        <categories>kb-readiness,helptext,article-selector</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Date greater-or-equal operator helptext</shortDescription>
+        <value>Matches articles where the date is on or after the given date. Use ISO format: YYYY-MM-DD.</value>
+    </labels>
+    <labels>
+        <fullName>KB_Helptext_Filter_DateLte</fullName>
+        <categories>kb-readiness,helptext,article-selector</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Date less-or-equal operator helptext</shortDescription>
+        <value>Matches articles where the date is on or before the given date. Use ISO format: YYYY-MM-DD.</value>
+    </labels>
+    <labels>
+        <fullName>KB_Helptext_Filter_LogicAnd</fullName>
+        <categories>kb-readiness,helptext,article-selector</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Clause logic AND helptext</shortDescription>
+        <value>Article must match all added clauses. Stricter — returns fewer results.</value>
+    </labels>
+    <labels>
+        <fullName>KB_Helptext_Filter_LogicOr</fullName>
+        <categories>kb-readiness,helptext,article-selector</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Clause logic OR helptext</shortDescription>
+        <value>Article matches if any clause matches. Broader — returns more results.</value>
+    </labels>
+    <labels>
+        <fullName>KB_Helptext_Preflight_DataCloud</fullName>
+        <categories>kb-readiness,helptext,preflight</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Preflight: Data Cloud helptext</shortDescription>
+        <value>Data Cloud powers semantic vector search for higher-quality deduplication. Without it, the pipeline falls back to SOQL keyword matching.</value>
+    </labels>
+    <labels>
+        <fullName>KB_Helptext_Preflight_SearchIndex</fullName>
+        <categories>kb-readiness,helptext,preflight</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Preflight: Search index helptext</shortDescription>
+        <value>Data Cloud vector search requires a configured search index name. Set this in Step 4 — Runtime &amp; Retrieval.</value>
+    </labels>
+    <labels>
+        <fullName>KB_Helptext_Preflight_ContentFields</fullName>
+        <categories>kb-readiness,helptext,preflight</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Preflight: Content fields helptext</shortDescription>
+        <value>The scorer reads article body from the fields you select. Without at least one content field, articles cannot be scored.</value>
+    </labels>
+    <labels>
+        <fullName>KB_Helptext_Preflight_ArticlesExist</fullName>
+        <categories>kb-readiness,helptext,preflight</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Preflight: Articles exist helptext</shortDescription>
+        <value>At least one published article is needed for an assessment run to produce results.</value>
+    </labels>
+    <labels>
+        <fullName>KB_Helptext_Preflight_BypassPermission</fullName>
+        <categories>kb-readiness,helptext,preflight</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Preflight: Bypass permission helptext</shortDescription>
+        <value>Bypass_AI_Knowledge_Check lets trusted authors publish without running the sidebar consistency checker. Optional.</value>
+    </labels>
+    <labels>
+        <fullName>KB_Helptext_Preflight_ContentFieldsMatchIndex</fullName>
+        <categories>kb-readiness,helptext,preflight</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Preflight: Content fields match index helptext</shortDescription>
+        <value>Dimension scoring reads the content fields you select in Step 2; the dedup pipeline reads whatever the search index embeds. A mismatch means the two surfaces evaluate different text — a soft warning, not a blocker.</value>
+    </labels>
+    <labels>
+        <fullName>KB_Helptext_Pipeline_MaxFinalists</fullName>
+        <categories>kb-readiness,helptext,pipeline-config</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Pipeline: Max finalists helptext</shortDescription>
+        <value>Upper bound on how many duplicate candidates each article can produce. Higher finds more matches but costs more LLM calls.</value>
+    </labels>
+    <labels>
+        <fullName>KB_Helptext_Pipeline_MaxChunks</fullName>
+        <categories>kb-readiness,helptext,pipeline-config</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Pipeline: Max chunks helptext</shortDescription>
+        <value>Number of body-text chunks per article fed into vector search. Higher improves recall, increases Data Cloud consumption.</value>
+    </labels>
+    <labels>
+        <fullName>KB_Helptext_Pipeline_TopK</fullName>
+        <categories>kb-readiness,helptext,pipeline-config</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Pipeline: Top K helptext</shortDescription>
+        <value>How many nearest neighbors vector search returns per query. Higher improves recall but grows downstream work.</value>
+    </labels>
+    <labels>
+        <fullName>KB_Helptext_Pipeline_SimThreshold</fullName>
+        <categories>kb-readiness,helptext,pipeline-config</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Pipeline: Similarity threshold helptext</shortDescription>
+        <value>Minimum chunk-level cosine similarity (0–1) a semantic-search match must clear to be kept as a duplicate candidate. This is an embedding-retrieval cutoff — NOT the article-level Confidence Score shown on candidates in the Action Center (that is an LLM judgment on a 0–100 scale). Higher = fewer false positives but more missed duplicates. Default 0.75.</value>
+    </labels>
+    <labels>
+        <fullName>KB_Helptext_Pipeline_Languages</fullName>
+        <categories>kb-readiness,helptext,pipeline-config</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Pipeline: Supported languages helptext</shortDescription>
+        <value>Comma-separated locale codes (e.g. en_US, fr) the pipeline will process. Articles in other languages are skipped.</value>
+    </labels>
+    <labels>
+        <fullName>KB_Helptext_Pipeline_MaxChunkSize</fullName>
+        <categories>kb-readiness,helptext,pipeline-config</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Pipeline: Max chunk size helptext</shortDescription>
+        <value>Maximum characters per text chunk during agentic duplicate analysis. Default 500. Larger chunks give more context, smaller chunks give more granular matches.</value>
+    </labels>
+    <labels>
+        <fullName>KB_Coach_FirstRun_Title</fullName>
+        <categories>kb-readiness,empty-state,coach</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>First-run coach banner title</shortDescription>
+        <value>Welcome to Readiness</value>
+    </labels>
+    <labels>
+        <fullName>KB_Coach_FirstRun_Body</fullName>
+        <categories>kb-readiness,empty-state,coach</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>First-run coach banner body</shortDescription>
+        <value>Setup is complete. Run your first assessment on 25 articles to see how ready your Knowledge Base is for Agentforce.</value>
+    </labels>
+    <labels>
+        <fullName>KB_Coach_FirstRun_CTA</fullName>
+        <categories>kb-readiness,empty-state,coach</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>First-run coach CTA button</shortDescription>
+        <value>Run your first assessment</value>
+    </labels>
+    <labels>
+        <fullName>KB_Empty_Operations_NoRuns_Title</fullName>
+        <categories>kb-readiness,empty-state</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Operations zero-runs state title</shortDescription>
+        <value>No assessment runs yet</value>
+    </labels>
+    <labels>
+        <fullName>KB_Empty_Operations_NoRuns_Body</fullName>
+        <categories>kb-readiness,empty-state</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Operations zero-runs state body</shortDescription>
+        <value>Once you complete an assessment run, results, dimensions, and pending actions will appear here.</value>
+    </labels>
+    <labels>
+        <fullName>KB_Empty_Inbox_NoRuns_Title</fullName>
+        <categories>kb-readiness,empty-state</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Candidate inbox zero-runs state title</shortDescription>
+        <value>Nothing to review yet</value>
+    </labels>
+    <labels>
+        <fullName>KB_Empty_Inbox_NoRuns_Body</fullName>
+        <categories>kb-readiness,empty-state</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Candidate inbox zero-runs state body</shortDescription>
+        <value>Duplicate candidates and enrichment proposals appear here after the dedup pipeline completes a run.</value>
+    </labels>
+    <labels>
+        <fullName>KB_Permset_SetupAdmin_ApiName</fullName>
+        <categories>kb-readiness,permissions,configurable</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>API name of the Setup Admin permission set (override if renamed in target org)</shortDescription>
+        <value>KB_Assessment_Setup_Admin</value>
+    </labels>
+    <labels>
+        <fullName>KB_Permset_Admin_ApiName</fullName>
+        <categories>kb-readiness,permissions,configurable</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>API name of the Admin permission set (override if renamed in target org)</shortDescription>
+        <value>KB_Assessment_Admin</value>
+    </labels>
+    <labels>
+        <fullName>KB_Permset_Viewer_ApiName</fullName>
+        <categories>kb-readiness,permissions,configurable</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>API name of the Viewer permission set (override if renamed in target org)</shortDescription>
+        <value>KB_Assessment_Viewer</value>
+    </labels>
+    <labels>
+        <fullName>KB_Sidebar_Readiness_NoAssessment_Title</fullName>
+        <categories>kb-readiness,sidebar</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>No assessment state title</shortDescription>
+        <value>No assessment yet</value>
+    </labels>
+    <labels>
+        <fullName>KB_Sidebar_Readiness_NoAssessment_Body</fullName>
+        <categories>kb-readiness,sidebar</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>No assessment state body</shortDescription>
+        <value>Run this article through an assessment from the KB Assessment tab to see its readiness score.</value>
+    </labels>
+    <labels>
+        <fullName>KB_Sidebar_Readiness_NoAssessment_CTA</fullName>
+        <categories>kb-readiness,sidebar</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>No assessment CTA</shortDescription>
+        <value>Go to KB Assessment</value>
+    </labels>
+    <labels>
+        <fullName>KB_Sidebar_Readiness_Score_Label</fullName>
+        <categories>kb-readiness,sidebar</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Score label</shortDescription>
+        <value>Readiness Score</value>
+    </labels>
+    <labels>
+        <fullName>KB_Cost_Title</fullName>
+        <categories>kb-readiness,cost-preview</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Cost preview modal title</shortDescription>
+        <value>Preview before running</value>
+    </labels>
+    <labels>
+        <fullName>KB_Cost_Subtitle</fullName>
+        <categories>kb-readiness,cost-preview</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Cost preview subtitle</shortDescription>
+        <value>Indicative consumption based on current org-limit usage. Not a billing figure.</value>
+    </labels>
+    <labels>
+        <fullName>KB_Cost_Section_Scope</fullName>
+        <categories>kb-readiness,cost-preview</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Scope section header</shortDescription>
+        <value>Scope</value>
+    </labels>
+    <labels>
+        <fullName>KB_Cost_Credits_Notice</fullName>
+        <categories>kb-readiness,cost-preview</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Short non-alarming credits-consumption notice on the run preview</shortDescription>
+        <value>This assessment uses Einstein and Data Cloud, which consume credits.</value>
+    </labels>
+    <labels>
+        <fullName>KB_Cost_Section_Limits</fullName>
+        <categories>kb-readiness,cost-preview</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Org limits section header</shortDescription>
+        <value>Org Limits (Today)</value>
+    </labels>
+    <labels>
+        <fullName>KB_Cost_Label_Articles</fullName>
+        <categories>kb-readiness,cost-preview</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Articles count label</shortDescription>
+        <value>Articles</value>
+    </labels>
+    <labels>
+        <fullName>KB_Cost_Warn_Title</fullName>
+        <categories>kb-readiness,cost-preview</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Typed confirmation title</shortDescription>
+        <value>Confirm to proceed</value>
+    </labels>
+    <labels>
+        <fullName>KB_Cost_Warn_Body</fullName>
+        <categories>kb-readiness,cost-preview</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Typed confirmation body</shortDescription>
+        <value>This is a large run or will consume a significant share of your daily quota. It uses Einstein and Data Cloud, which consume credits. Type RUN below to confirm.</value>
+    </labels>
+    <labels>
+        <fullName>KB_Cost_Warn_Placeholder</fullName>
+        <categories>kb-readiness,cost-preview</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Typed confirmation placeholder</shortDescription>
+        <value>Type RUN</value>
+    </labels>
+    <labels>
+        <fullName>KB_Cost_Action_Proceed</fullName>
+        <categories>kb-readiness,cost-preview</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Proceed button</shortDescription>
+        <value>Start Assessment</value>
+    </labels>
+    <labels>
+        <fullName>KB_Cost_Action_Cancel</fullName>
+        <categories>kb-readiness,cost-preview</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Cancel button</shortDescription>
+        <value>Cancel</value>
+    </labels>
+    <labels>
+        <fullName>KB_Diag_Tab_Title</fullName>
+        <categories>kb-readiness,diagnostics</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Diagnostics tab title</shortDescription>
+        <value>Readiness Diagnostics</value>
+    </labels>
+    <labels>
+        <fullName>KB_Diag_Subtitle</fullName>
+        <categories>kb-readiness,diagnostics</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Diagnostics subtitle</shortDescription>
+        <value>Live snapshot of preflight checks, org-limit headroom, recent async failures, and runtime configuration.</value>
+    </labels>
+    <labels>
+        <fullName>KB_Diag_Action_Refresh</fullName>
+        <categories>kb-readiness,diagnostics</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Diagnostics refresh button</shortDescription>
+        <value>Refresh</value>
+    </labels>
+    <labels>
+        <fullName>KB_Diag_Action_CopyBundle</fullName>
+        <categories>kb-readiness,diagnostics</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Copy diagnostic bundle button</shortDescription>
+        <value>Copy Diagnostic Bundle</value>
+    </labels>
+    <labels>
+        <fullName>KB_Diag_Toast_CopySuccess</fullName>
+        <categories>kb-readiness,diagnostics</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Toast when copy succeeds</shortDescription>
+        <value>Diagnostic bundle copied to clipboard.</value>
+    </labels>
+    <labels>
+        <fullName>KB_Diag_Toast_CopyFail</fullName>
+        <categories>kb-readiness,diagnostics</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Toast when copy fails</shortDescription>
+        <value>Could not copy to clipboard. Use the fallback text area below the button.</value>
+    </labels>
+    <labels>
+        <fullName>KB_Diag_Section_Preflight</fullName>
+        <categories>kb-readiness,diagnostics</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Diagnostics preflight section header</shortDescription>
+        <value>Preflight Checks</value>
+    </labels>
+    <labels>
+        <fullName>KB_Diag_Section_Limits</fullName>
+        <categories>kb-readiness,diagnostics</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Diagnostics org limits section header</shortDescription>
+        <value>Org Limits (Today)</value>
+    </labels>
+    <labels>
+        <fullName>KB_Diag_Section_Failures</fullName>
+        <categories>kb-readiness,diagnostics</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Diagnostics recent failures section header</shortDescription>
+        <value>Recent Async Apex Failures</value>
+    </labels>
+    <labels>
+        <fullName>KB_Diag_Section_Runtime</fullName>
+        <categories>kb-readiness,diagnostics</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Diagnostics runtime section header</shortDescription>
+        <value>Runtime Configuration</value>
+    </labels>
+    <labels>
+        <fullName>KB_Diag_NoFailures</fullName>
+        <categories>kb-readiness,diagnostics</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Shown when no recent async failures</shortDescription>
+        <value>No KB-related async job failures in recent history. Clean.</value>
+    </labels>
+    <labels>
+        <fullName>KB_Empty_Action_Run_Assessment</fullName>
+        <categories>kb-readiness,empty-state</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Shared 'Run an assessment' CTA label</shortDescription>
+        <value>Run an assessment</value>
+    </labels>
+    <labels>
+        <fullName>KB_Permset_SetupAdmin_Label</fullName>
+        <categories>kb-readiness,setup-wizard-permissions</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Display label for the setup-admin permset</shortDescription>
+        <value>Setup Admin</value>
+    </labels>
+    <labels>
+        <fullName>KB_Permset_Admin_Label</fullName>
+        <categories>kb-readiness,setup-wizard-permissions</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Display label for the assessment-manager permset</shortDescription>
+        <value>Assessment Manager</value>
+    </labels>
+    <labels>
+        <fullName>KB_Permset_Viewer_Label</fullName>
+        <categories>kb-readiness,setup-wizard-permissions</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Display label for the assessment-viewer permset</shortDescription>
+        <value>Assessment Viewer</value>
+    </labels>
+
+    <labels>
+        <fullName>KB_OrgLimit_DailyAsyncApex</fullName>
+        <categories>kb-readiness,org-limits</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Label for DailyAsyncApexExecutions</shortDescription>
+        <value>Async Apex executions (daily)</value>
+    </labels>
+    <labels>
+        <fullName>KB_OrgLimit_DailyApiRequests</fullName>
+        <categories>kb-readiness,org-limits</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Label for DailyApiRequests</shortDescription>
+        <value>API requests (daily)</value>
+    </labels>
+    <labels>
+        <fullName>KB_OrgLimit_HourlyPlatformEvents</fullName>
+        <categories>kb-readiness,org-limits</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Label for HourlyPublishedPlatformEvents</shortDescription>
+        <value>Platform events published (hourly)</value>
+    </labels>
+    <labels>
+        <fullName>KB_OrgLimit_HourlyODataCallout</fullName>
+        <categories>kb-readiness,org-limits</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Label for HourlyODataCallout</shortDescription>
+        <value>OData callouts (hourly)</value>
+    </labels>
+
+    <labels>
+        <fullName>KB_Wizard_Step_Welcome</fullName>
+        <categories>kb-readiness,setup-wizard</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Step 1 label</shortDescription>
+        <value>Welcome &amp; Prerequisites</value>
+    </labels>
+    <labels>
+        <fullName>KB_Wizard_Step_ContentScope</fullName>
+        <categories>kb-readiness,setup-wizard</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Step 2 label</shortDescription>
+        <value>Content Scope</value>
+    </labels>
+    <labels>
+        <fullName>KB_Wizard_Step_Essentials</fullName>
+        <categories>kb-readiness,setup-wizard</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Essentials step label</shortDescription>
+        <value>Essentials</value>
+    </labels>
+    <labels>
+        <fullName>KB_Wizard_Step_AssessmentRules</fullName>
+        <categories>kb-readiness,setup-wizard</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Step 3 label</shortDescription>
+        <value>Assessment Rules</value>
+    </labels>
+    <labels>
+        <fullName>KB_Wizard_Step_RuntimeRetrieval</fullName>
+        <categories>kb-readiness,setup-wizard</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Step 4 label</shortDescription>
+        <value>Runtime &amp; Retrieval</value>
+    </labels>
+    <labels>
+        <fullName>KB_Wizard_Step_TestConnections</fullName>
+        <categories>kb-readiness,setup-wizard</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Step 5 label</shortDescription>
+        <value>Test Connections</value>
+    </labels>
+    <labels>
+        <fullName>KB_Wizard_Step_ValidateSave</fullName>
+        <categories>kb-readiness,setup-wizard</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Step 6 label</shortDescription>
+        <value>Validate &amp; Save</value>
+    </labels>
+
+    <labels>
+        <fullName>KB_Wizard_Cta_SaveAndNext</fullName>
+        <categories>kb-readiness,setup-wizard</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Primary CTA when step is dirty</shortDescription>
+        <value>Save &amp; Next</value>
+    </labels>
+    <labels>
+        <fullName>KB_Wizard_Cta_Next</fullName>
+        <categories>kb-readiness,setup-wizard</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Primary CTA when step is clean</shortDescription>
+        <value>Next</value>
+    </labels>
+    <labels>
+        <fullName>KB_Wizard_Cta_RunValidation</fullName>
+        <categories>kb-readiness,setup-wizard</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Primary CTA for final validation step</shortDescription>
+        <value>Run Final Validation</value>
+    </labels>
+    <labels>
+        <fullName>KB_Wizard_Cta_CompleteSetup</fullName>
+        <categories>kb-readiness,setup-wizard</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Primary CTA after successful validation</shortDescription>
+        <value>Complete Setup</value>
+    </labels>
+    <labels>
+        <fullName>KB_Wizard_Cta_Done</fullName>
+        <categories>kb-readiness,setup-wizard</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Post-completion CTA when the user cannot reach the Assessments tab</shortDescription>
+        <value>Done</value>
+    </labels>
+    <labels>
+        <fullName>KB_Wizard_Cta_GoToDashboard</fullName>
+        <categories>kb-readiness,setup-wizard</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Primary CTA after setup completes — lands on the Assessments tab</shortDescription>
+        <value>Go to Assessments</value>
+    </labels>
+    <labels>
+        <fullName>KB_Wizard_Cta_RerunValidation</fullName>
+        <categories>kb-readiness,setup-wizard</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Always-visible Step 5 CTA to re-run post-flight validation</shortDescription>
+        <value>Re-run Validation</value>
+    </labels>
+
+    <labels>
+        <fullName>KB_Wizard_Check_Cta_GoToStep</fullName>
+        <categories>kb-readiness,setup-wizard</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Preflight check CTA: jump to a wizard step (token {0} replaced with step number)</shortDescription>
+        <value>Go to step {0}</value>
+    </labels>
+    <labels>
+        <fullName>KB_Wizard_Check_Cta_OpenSetup</fullName>
+        <categories>kb-readiness,setup-wizard</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Preflight check CTA: open Salesforce Setup deep-link</shortDescription>
+        <value>Open Salesforce Setup</value>
+    </labels>
+    <labels>
+        <fullName>KB_Wizard_Toast_ContentScopeSaved</fullName>
+        <categories>kb-readiness,setup-wizard,toast</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Toast: content scope saved</shortDescription>
+        <value>Content scope saved.</value>
+    </labels>
+    <labels>
+        <fullName>KB_Wizard_Toast_EssentialsSaved</fullName>
+        <categories>kb-readiness,setup-wizard,toast</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Toast: essentials saved</shortDescription>
+        <value>Essentials saved.</value>
+    </labels>
+    <labels>
+        <fullName>KB_Wizard_Toast_AssessmentRulesSaved</fullName>
+        <categories>kb-readiness,setup-wizard,toast</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Toast: assessment rules saved</shortDescription>
+        <value>Assessment rules saved.</value>
+    </labels>
+    <labels>
+        <fullName>KB_Wizard_Toast_RuntimeRetrievalSaved</fullName>
+        <categories>kb-readiness,setup-wizard,toast</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Toast: runtime and retrieval saved</shortDescription>
+        <value>Runtime &amp; retrieval saved.</value>
+    </labels>
+    <labels>
+        <fullName>KB_Wizard_Toast_ValidationPassed</fullName>
+        <categories>kb-readiness,setup-wizard,toast</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Toast: final validation passed</shortDescription>
+        <value>Final validation passed.</value>
+    </labels>
+    <labels>
+        <fullName>KB_Wizard_Toast_ValidationFailed</fullName>
+        <categories>kb-readiness,setup-wizard,toast</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Toast: final validation failed</shortDescription>
+        <value>Final validation found issues — resolve blockers and re-run.</value>
+    </labels>
+    <labels>
+        <fullName>KB_Wizard_Toast_SetupComplete</fullName>
+        <categories>kb-readiness,setup-wizard,toast</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Toast: setup complete</shortDescription>
+        <value>Setup complete. You can start running assessments now.</value>
+    </labels>
+    <labels>
+        <fullName>KB_Wizard_Toast_SetupComplete_Title</fullName>
+        <categories>kb-readiness,setup-wizard,toast</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Toast title: setup complete</shortDescription>
+        <value>Setup complete</value>
+    </labels>
+    <labels>
+        <fullName>KB_Sidebar_Tab_CheckPublish</fullName>
+        <categories>kb-readiness,sidebar</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Consistency checker: Check &amp; Publish tab</shortDescription>
+        <value>Check &amp; Publish</value>
+    </labels>
+    <labels>
+        <fullName>KB_Sidebar_Tab_CheckConflicts</fullName>
+        <categories>kb-readiness,sidebar</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Consistency checker: Check for Conflicts tab</shortDescription>
+        <value>Check for Conflicts</value>
+    </labels>
+
+</CustomLabels>

@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<GenAiPromptTemplate xmlns="http://soap.sforce.com/2006/04/metadata">
+    <activeVersionIdentifier>dIRBZxdJBYVmvmwv4/3DkrD7prMYAANFTVuvFEZTzUI=_1</activeVersionIdentifier>
+    <developerName>Draft_Evaluator</developerName>
+    <masterLabel>Draft_Evaluator</masterLabel>
+    <overridable>false</overridable>
+    <templateVersions>
+        <content>You are a Knowledge Base quality auditor. Compare the Draft Article below against the list of Similar Published Articles. Identify if the draft duplicates, contradicts, or significantly overlaps with any published article.
+
+Classify each issue as:
+- Duplicate: The draft resolves the same problem with the same solution as an existing article
+- Contradiction: The draft provides conflicting instructions or facts compared to an existing article  
+- Overlap: The draft partially covers the same topic but with enough difference to potentially confuse users
+
+Draft Article:
+{!$Input:draftText}
+
+Similar Published Articles (JSON):
+{!$Input:similarChunks}
+Respond with ONLY valid JSON, no markdown formatting, no code blocks. Use this exact format:
+{&quot;hasConflict&quot;: true, &quot;conflicts&quot;: [{&quot;articleId&quot;: &quot;the articleVersionId from the similar article&quot;, &quot;articleTitle&quot;: &quot;the title&quot;, &quot;type&quot;: &quot;Duplicate or Contradiction or Overlap&quot;, &quot;reasoning&quot;: &quot;2-3 sentence explanation&quot;}]}
+
+If no issues found, return:
+{&quot;hasConflict&quot;: false, &quot;conflicts&quot;: []}
+</content>
+        <inputs>
+            <apiName>draftText</apiName>
+            <definition>primitive://String</definition>
+            <masterLabel>draftText</masterLabel>
+            <referenceName>Input:draftText</referenceName>
+            <required>true</required>
+        </inputs>
+        <inputs>
+            <apiName>similarChunks</apiName>
+            <definition>primitive://String</definition>
+            <masterLabel>similarChunks</masterLabel>
+            <referenceName>Input:similarChunks</referenceName>
+            <required>true</required>
+        </inputs>
+        <primaryModel>testTemp0_CM_12l_OKM89276f35</primaryModel>
+        <status>Published</status>
+        <versionIdentifier>dIRBZxdJBYVmvmwv4/3DkrD7prMYAANFTVuvFEZTzUI=_1</versionIdentifier>
+    </templateVersions>
+    <type>einstein_gpt__flex</type>
+    <visibility>Global</visibility>
+</GenAiPromptTemplate>

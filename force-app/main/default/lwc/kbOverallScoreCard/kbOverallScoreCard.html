@@ -1,0 +1,46 @@
+<template>
+    <div class="slds-box slds-box_small score-card">
+        <div class="slds-text-align_center">
+            <h3 class="slds-text-title_caps slds-m-bottom_small">
+                Overall KB Readiness
+                <lightning-helptext content={overallHelp}></lightning-helptext>
+            </h3>
+
+            <!-- Circular score gauge -->
+            <div class="gauge-container">
+                <svg viewBox="0 0 100 100" class="gauge">
+                    <!-- Background circle -->
+                    <circle
+                        cx="50"
+                        cy="50"
+                        r="45"
+                        fill="none"
+                        stroke="#e0e5ee"
+                        stroke-width="8">
+                    </circle>
+                    <!-- Score arc -->
+                    <circle
+                        cx="50"
+                        cy="50"
+                        r="45"
+                        fill="none"
+                        stroke={scoreColor}
+                        stroke-width="8"
+                        stroke-linecap="round"
+                        stroke-dasharray={dashArray}
+                        stroke-dashoffset={dashOffset}
+                        transform="rotate(-90 50 50)">
+                    </circle>
+                </svg>
+                <div class="gauge-text">
+                    <span class="score-value">{displayScore}</span>
+                    <span class="score-label">{readinessLabel}</span>
+                </div>
+            </div>
+
+            <p class="slds-text-body_small slds-m-top_small">
+                Based on {totalArticles} article{pluralSuffix}
+            </p>
+        </div>
+    </div>
+</template>

@@ -1,0 +1,175 @@
+<template>
+    <!-- Standalone (legacy admin wizard) renders its own section title; the
+         redesigned experience wizard sets `embedded` and owns the "Search index"
+         heading itself, so this internal one is suppressed to avoid a duplicate
+         heading directly under the section title. -->
+    <template lwc:if={showComponentTitle}>
+        <h3 class="slds-text-heading_small slds-m-bottom_x-small">Search Index Configuration</h3>
+        <p class="slds-text-body_small slds-text-color_weak slds-m-bottom_medium">
+            Configure the search index used by semantic deduplication.
+        </p>
+    </template>
+
+    <div class="slds-grid slds-wrap slds-gutters slds-m-bottom_small">
+        <div class="slds-col slds-size_1-of-2">
+            <lightning-input
+                type="toggle"
+                label="Enable Search Index (Data Cloud)"
+                checked={isActive}
+                data-field="isActive"
+                field-level-help="Uses Data Cloud semantic search for high-quality deduplication. Disable if Data Cloud is not provisioned — SOQL keyword matching will be used instead."
+                onchange={handleChange}
+            ></lightning-input>
+        </div>
+        <template lwc:if={showFallbackNotice}>
+            <div class="slds-col slds-size_1-of-1 slds-m-top_x-small">
+                <div class="slds-box slds-box_x-small slds-theme_info">
+                    <p class="slds-text-body_small">
+                        <lightning-icon icon-name="utility:info" size="xx-small" class="slds-m-right_xx-small"></lightning-icon>
+                        Search index disabled — deduplication will use SOQL keyword matching instead of semantic search. Quality will be lower but functional.
+                    </p>
+                </div>
+            </div>
+        </template>
+    </div>
+
+    <!-- Search Index -->
+    <div class="slds-grid slds-wrap slds-gutters">
+        <div class="slds-col slds-size_1-of-2 slds-p-bottom_small">
+            <div class="slds-form-element__label">Search Index</div>
+            <template lwc:if={isIndexesLoading}>
+                <div class="slds-grid slds-grid_vertical-align-center slds-m-top_x-small">
+                    <lightning-spinner alternative-text="Loading indexes..." size="x-small" class="slds-m-right_x-small"></lightning-spinner>
+                    <span class="slds-text-body_small slds-text-color_weak">Loading available indexes…</span>
+                </div>
+            </template>
+            <template lwc:elseif={hasIndexesError}>
+                <lightning-combobox
+                    class="search-index-combobox"
+                    label="Search Index"
+                    value={selectedIndexComboValue}
+                    options={indexComboOptions}
+                    onchange={handleIndexComboChange}
+                    disabled={isVectorDisabled}
+                    required={isActive}
+                    message-when-value-missing="Select a search index before continuing."
+                    field-level-help="Select a Data Cloud search index. Could not auto-discover indexes."
+                ></lightning-combobox>
+            </template>
+            <template lwc:elseif={hasNoIndexes}>
+                <div class="slds-box slds-box_x-small slds-theme_warning slds-m-top_x-small">
+                    <p class="slds-text-body_small slds-m-bottom_x-small">
+                        <lightning-icon icon-name="utility:warning" size="xx-small" class="slds-m-right_xx-small" aria-hidden="true"></lightning-icon>
+                        No search indexes found in this org. Create one via Data Cloud (DMO-based index) or Agentforce Data Library before configuring the search index. The deduplication pipeline will use SOQL keyword fallback until an index is configured.
+                    </p>
+                    <template lwc:if={isActive}>
+                        <lightning-button
+                            label="Continue without search index"
+                            variant="neutral"
+                            onclick={handleDisableVectorSearch}
+                            class="slds-m-top_x-small"
+                        ></lightning-button>
+                    </template>
+                </div>
+            </template>
+            <template lwc:else>
+                <lightning-combobox
+                    class="search-index-combobox"
+                    label="Search Index"
+                    value={selectedIndexComboValue}
+                    options={indexComboOptions}
+                    onchange={handleIndexComboChange}
+                    placeholder="Select an index..."
+                    disabled={isVectorDisabled}
+                    required={isActive}
+                    message-when-value-missing="Select a search index before continuing."
+                    field-level-help="Select from indexes discovered in your Data Cloud org."
+                ></lightning-combobox>
+            </template>
+        </div>
+    </div>
+
+ <!-- ADL classification. An Agentforce Data Library ingests every
+         article version (Published, Draft, Archived), so the dedup query must be
+         prefiltered to published content. A custom Data Cloud index is assumed to
+         be scoped to published articles at index-creation time. -->
+    <template lwc:if={isActive}>
+        <div class="slds-grid slds-wrap slds-gutters slds-m-top_x-small">
+            <div class="slds-col slds-size_1-of-1 slds-p-bottom_x-small">
+                <lightning-input
+                    type="checkbox"
+                    label="This search index is an Agentforce Data Library (ADL)"
+                    checked={isAdl}
+                    data-field="isAdl"
+                    field-level-help="An ADL ingests all article versions — including Draft and Archived. When checked, the deduplication query filters to currently-published content so older/unpublished versions of the same article don't surface as duplicates."
+                    onchange={handleChange}
+                ></lightning-input>
+            </div>
+        </div>
+
+        <!-- ADL = yes: auto-filter applied downstream -->
+        <template lwc:if={isAdl}>
+            <div class="slds-box slds-box_x-small slds-theme_info slds-m-bottom_small">
+                <p class="slds-text-body_small">
+                    <lightning-icon icon-name="utility:info" size="xx-small" class="slds-m-right_xx-small" aria-hidden="true"></lightning-icon>
+                    Deduplication will automatically filter to currently-published articles, so prior
+                    Draft/Archived versions of the same article won't be flagged as duplicates.
+                </p>
+            </div>
+        </template>
+
+        <!-- ADL = no (custom index): admin must acknowledge published-only scope -->
+        <template lwc:if={isCustomIndex}>
+            <div class="slds-box slds-box_x-small slds-theme_warning slds-m-bottom_small">
+                <p class="slds-text-body_small slds-m-bottom_x-small">
+                    <lightning-icon icon-name="utility:warning" size="xx-small" class="slds-m-right_xx-small" aria-hidden="true"></lightning-icon>
+                    For a custom Data Cloud index, the deduplication query does <strong>not</strong> apply a
+                    publish-status filter — it searches whatever the index contains. Configure the index to
+                    ingest <strong>published articles only</strong> (per the README), or expect unusual results
+                    from non-published or prior versions.
+                </p>
+                <lightning-input
+                    class="custom-index-ack"
+                    type="checkbox"
+                    label="I have configured this custom index to contain only published articles."
+                    checked={customIndexPublishedAck}
+                    data-field="customIndexPublishedAck"
+                    required
+                    message-when-value-missing="Acknowledge the published-only scope, or mark the index as an ADL above."
+                    onchange={handleChange}
+                ></lightning-input>
+            </div>
+        </template>
+    </template>
+
+    <!-- Max Results is a semantic-search tuning knob, not part of the mandatory
+         search-index setup. The redesigned wizard hides it here and
+         surfaces it under its Advanced accordion via hide-max-results. The
+         legacy admin wizard leaves it inline (flag defaults false). -->
+    <template lwc:if={showMaxResults}>
+        <div class="slds-grid slds-wrap slds-gutters">
+            <div class="slds-col slds-size_1-of-2 slds-p-bottom_small">
+                <lightning-input
+                    type="number" label="Max Results"
+                    value={maxResults} data-field="maxResults"
+                    min="1" max="100" step="1"
+                    disabled={isVectorDisabled}
+                    field-level-help="Maximum number of results per search"
+                    onchange={handleChange}
+                ></lightning-input>
+            </div>
+        </div>
+    </template>
+
+    <div class="slds-grid slds-wrap slds-gutters slds-m-top_small slds-m-bottom_medium">
+        <div class="slds-col slds-size_1-of-2 slds-p-bottom_small">
+            <lightning-input
+                type="text" label="Data Space Name"
+                value={dataSpaceName} data-field="dataSpaceName"
+                disabled={isVectorDisabled}
+                field-level-help="Data Cloud data space name. Most orgs use 'default'."
+                onchange={handleChange}
+            ></lightning-input>
+        </div>
+    </div>
+</template>

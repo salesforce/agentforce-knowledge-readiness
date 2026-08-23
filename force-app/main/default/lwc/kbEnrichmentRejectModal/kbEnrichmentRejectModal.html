@@ -1,0 +1,24 @@
+<template>
+    <lightning-modal-header label="Reject Enrichment Candidate"></lightning-modal-header>
+    <lightning-modal-body>
+        <lightning-textarea
+            label="Rejection Reason"
+            placeholder="Why should this enrichment be rejected? This feedback helps improve future proposals."
+            value={rejectionReason}
+            onchange={handleReasonChange}
+        ></lightning-textarea>
+    </lightning-modal-body>
+    <lightning-modal-footer>
+        <lightning-button
+            label="Cancel"
+            onclick={handleCancel}
+            class="slds-m-right_x-small"
+        ></lightning-button>
+        <lightning-button
+            label="Confirm Rejection"
+            variant="destructive"
+            disabled={isConfirmDisabled}
+            onclick={handleConfirm}
+        ></lightning-button>
+    </lightning-modal-footer>
+</template>

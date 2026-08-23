@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>LLM_Content_Char_Limit__c</fullName>
+    <defaultValue>0</defaultValue>
+    <description>Maximum characters of article body content sent to LLM scoring prompts and AI Fix. 0 (default) = no cap — the full article body is sent. Set a positive integer to cap content length, e.g. 8000 to limit to 8000 chars. Minimum enforced when a cap is set: 1000. This field is intentionally not surfaced in the Setup Wizard — edit it directly on the KB_Scan_Config__c custom setting record.</description>
+    <externalId>false</externalId>
+    <inlineHelpText>0 = no cap (send full article). Set a positive integer to limit chars sent to the LLM (e.g. 8000). Not shown in Setup Wizard — edit KB_Scan_Config__c directly.</inlineHelpText>
+    <label>LLM Content Char Limit</label>
+    <precision>6</precision>
+    <required>false</required>
+    <scale>0</scale>
+    <trackTrending>false</trackTrending>
+    <type>Number</type>
+    <unique>false</unique>
+</CustomField>

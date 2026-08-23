@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Assessment_Run__c</fullName>
+    <description>Assessment run that initiated this pipeline run.</description>
+    <label>Assessment Run</label>
+    <referenceTo>KB_Assessment_Run__c</referenceTo>
+    <relationshipLabel>Pipeline Runs</relationshipLabel>
+    <relationshipName>Pipeline_Runs</relationshipName>
+    <required>false</required>
+    <trackTrending>false</trackTrending>
+    <type>Lookup</type>
+</CustomField>

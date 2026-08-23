@@ -1,0 +1,12 @@
+/*
+ * First step of the new-assessment modal. A full-bleed
+ * lightning-input/textarea looked oversized and cramped against the modal
+ * edges. Cap the form column at a comfortable reading width, give it
+ * interior padding, and centre it (margin auto) so it sits in a tidy block
+ * in the middle of the modal rather than hugging the left edge.
+ */
+.details-form {
+    max-width: 32rem;
+    margin: 0 auto;
+    padding: 1.25rem 1.5rem;
+}

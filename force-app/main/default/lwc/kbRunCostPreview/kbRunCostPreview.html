@@ -1,0 +1,181 @@
+<template>
+    <template lwc:if={isOpen}>
+        <section
+            role={dialogRole}
+            tabindex="-1"
+            aria-labelledby="modal-heading-cost"
+            aria-modal={ariaModalValue}
+            class={sectionClass}>
+            <div class={containerClass}>
+                <template lwc:if={showChrome}>
+                    <header class="slds-modal__header">
+                        <h2 id="modal-heading-cost" class="slds-modal__title slds-hyphenate">{titleLabel}</h2>
+                        <p class="slds-m-top_xx-small slds-text-body_small slds-text-color_weak">{subtitleLabel}</p>
+                    </header>
+                </template>
+
+                <div class={contentClass}>
+ <!--: assessment name + description, so the user confirms
+                         what they're about to run. -->
+                    <template lwc:if={hasAssessmentName}>
+                        <section class="slds-box slds-box_small slds-m-bottom_small">
+                            <dt class="slds-text-color_weak slds-text-body_small">Assessment name</dt>
+                            <dd class="slds-text-heading_small slds-m-bottom_x-small" data-id="preview-assessment-name">{assessmentName}</dd>
+                            <template lwc:if={hasAssessmentDescription}>
+                                <dt class="slds-text-color_weak slds-text-body_small">Description</dt>
+                                <dd class="slds-text-body_regular" data-id="preview-assessment-description">{assessmentDescription}</dd>
+                            </template>
+                        </section>
+                    </template>
+
+                    <template lwc:if={isLoading}>
+                        <div class="slds-align_absolute-center slds-p-around_large">
+                            <lightning-spinner alternative-text="Estimating..." size="small"></lightning-spinner>
+                        </div>
+                    </template>
+
+                    <template lwc:if={error}>
+                        <div class="slds-notify slds-notify_alert slds-alert_error" role="alert">
+                            <p>{error}</p>
+                        </div>
+                    </template>
+
+                    <template lwc:if={hasEstimate}>
+ <!-- Scope. Dimension count dropped: every run
+                             scores all 6 dimensions now that dimension
+                             selection was removed, so the stat was vestigial. -->
+                        <section class="slds-box slds-box_small slds-m-bottom_small">
+                            <h3 class="slds-text-heading_small slds-m-bottom_x-small">{scopeSectionLabel}</h3>
+                            <dl class="slds-grid slds-wrap slds-gutters_small">
+                                <div class="slds-col slds-size_1-of-1">
+                                    <dt class="slds-text-color_weak slds-text-body_small">{articlesLabel}</dt>
+                                    <dd class="slds-text-heading_small">{estimate.articleCount}</dd>
+                                </div>
+                            </dl>
+                        </section>
+
+ <!-- (b) Dup/Conflict quality-gate explainer. Tells
+                             the user that Duplication/Conflict only run for
+                             articles clearing the configured thresholds, so a
+                             run that skips them isn't a bug. Live values from
+                             KB_Pipeline_Config__c via getQualityGateThresholds.
+                             role=status (informational, not alert) so a screen
+                             reader is notified when the async threshold values
+                             populate the text. -->
+                        <section class="slds-box slds-box_small slds-m-bottom_small slds-theme_info" data-id="gate-warning" role="status" aria-live="polite">
+                            <div class="slds-media slds-media_small">
+                                <div class="slds-media__figure">
+                                    <lightning-icon icon-name="utility:info" size="x-small" alternative-text="Info"></lightning-icon>
+                                </div>
+                                <div class="slds-media__body">
+                                    <p class="slds-text-body_small">{gateWarningText}</p>
+                                </div>
+                            </div>
+                        </section>
+
+ <!-- (c) Selected-article confirmation list. Hand-picked
+                             runs show the paged list (number + title); select-all-
+                             matching runs show a count summary (rows aren't cached). -->
+                        <section class="slds-box slds-box_small slds-m-bottom_small" data-id="selected-articles">
+                            <div class="slds-grid slds-grid_align-spread slds-m-bottom_x-small">
+                                <h3 class="slds-text-heading_small">Selected articles</h3>
+                                <template lwc:if={hasSelectedRows}>
+                                    <span class="slds-text-body_small slds-text-color_weak" data-id="article-count">{articleListCountLabel}</span>
+                                </template>
+                            </div>
+
+                            <template lwc:if={hasSelectedRows}>
+                                <ul class="slds-has-dividers_bottom-space" data-id="article-list">
+                                    <template for:each={visibleArticleRows} for:item="art">
+                                        <li key={art.id} class="slds-item slds-grid slds-grid_align-spread">
+                                            <span class="slds-truncate" title={art.title}>{art.title}</span>
+                                            <template lwc:if={art.articleNumber}>
+                                                <span class="slds-text-color_weak slds-text-body_small slds-m-left_small">{art.articleNumber}</span>
+                                            </template>
+                                        </li>
+                                    </template>
+                                </ul>
+                                <template lwc:if={hasMoreArticles}>
+                                    <lightning-button
+                                        variant="base"
+                                        label="Show more"
+                                        onclick={handleShowMoreArticles}
+                                        class="slds-m-top_x-small"
+                                        data-id="show-more-articles">
+                                    </lightning-button>
+                                </template>
+                            </template>
+
+                            <template lwc:if={isMatchingFilterMode}>
+                                <p class="slds-text-body_small slds-text-color_weak" data-id="matching-summary">
+                                    {estimate.articleCount} articles matching the current filter will be assessed.
+                                </p>
+                            </template>
+                        </section>
+
+                        <!-- Credits notice. Replaces the detailed
+                             expected-consumption breakdown: a
+                             short, non-alarming heads-up that the run draws on
+                             Einstein + Data Cloud credits, without surfacing
+                             raw call counts that read as a cost warning. -->
+                        <section class="slds-box slds-box_small slds-m-bottom_small">
+                            <p class="slds-text-body_small slds-text-color_weak" data-id="credits-notice">{creditsNoticeLabel}</p>
+                        </section>
+
+                        <!-- Org limits -->
+                        <section class="slds-box slds-box_small slds-m-bottom_small">
+                            <h3 class="slds-text-heading_small slds-m-bottom_x-small">{limitsSectionLabel}</h3>
+                            <template for:each={limitRows} for:item="row">
+                                <div key={row.apiName} class="slds-m-bottom_small">
+                                    <div class="slds-grid slds-grid_align-spread slds-m-bottom_xx-small">
+                                        <span class="slds-text-body_small slds-text-title_bold">{row.label}</span>
+                                        <span class="slds-text-body_small slds-text-color_weak">
+                                            +{row.projectedAddFormatted} · {row.usedFormatted} / {row.limitFormatted} · {row.projectedUsedPct}%
+                                        </span>
+                                    </div>
+                                    <lightning-progress-bar value={row.projectedUsedPct} size="small" variant={row.variant}></lightning-progress-bar>
+                                </div>
+                            </template>
+                        </section>
+
+                        <!-- Typed confirmation -->
+                        <template lwc:if={estimate.warn}>
+                            <section class="slds-box slds-box_x-small slds-theme_warning slds-m-bottom_small">
+                                <h3 class="slds-text-heading_small slds-m-bottom_x-small">{warnTitleLabel}</h3>
+                                <p class="slds-text-body_small slds-m-bottom_x-small">{warnBodyLabel}</p>
+                                <lightning-input
+                                    type="text"
+                                    variant="label-hidden"
+                                    label="Confirmation"
+                                    placeholder={warnPlaceholderLabel}
+                                    value={typedConfirmation}
+                                    onchange={handleTypedChange}>
+                                </lightning-input>
+                            </section>
+                        </template>
+                    </template>
+                </div>
+
+                <template lwc:if={showChrome}>
+                    <footer class="slds-modal__footer">
+                        <lightning-button
+                            label={cancelLabel}
+                            variant="neutral"
+                            onclick={handleCancel}
+                            class="slds-m-right_x-small">
+                        </lightning-button>
+                        <lightning-button
+                            label={proceedLabel}
+                            variant="brand"
+                            disabled={isProceedDisabled}
+                            onclick={handleProceed}>
+                        </lightning-button>
+                    </footer>
+                </template>
+            </div>
+        </section>
+        <template lwc:if={showChrome}>
+            <div class="slds-backdrop slds-backdrop_open"></div>
+        </template>
+    </template>
+</template>

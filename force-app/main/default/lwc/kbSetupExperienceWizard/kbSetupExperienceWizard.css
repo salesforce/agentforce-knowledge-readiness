@@ -1,0 +1,89 @@
+/*
+ * Read-only opportunity-path stepper. The path-type
+ * lightning-progress-indicator renders each stage as a clickable-looking
+ * button, but the setup wizard only navigates via the sticky footer
+ * (Next/Previous + dirty-state guards). Disabling pointer events on the
+ * wrapper removes the misleading click/hover affordance — it cascades
+ * through the indicator's shadow boundary because hit-testing honours an
+ * ancestor's pointer-events. cursor:default keeps the arrow over the path.
+ */
+.setup-path {
+    pointer-events: none;
+    cursor: default;
+}
+
+/*
+ * one consistent section rhythm on every wizard step. Each top-level
+ * area (content fields, data categories, search index; and the Validate & Save
+ * groups) is a .setup-section: a hairline rule plus spacing separates adjacent
+ * areas so a step reads as distinct blocks rather than one undivided column.
+ * The FIRST section on a step carries no rule — nothing sits above it but the
+ * step intro — hence the adjacent-sibling selector.
+ */
+.setup-section {
+    margin-top: 1rem;
+}
+.setup-section + .setup-section {
+    margin-top: 1.5rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid #d8dde6;
+}
+
+.check-row {
+    display: flex;
+    align-items: flex-start;
+}
+
+.check-icon_success {
+    --slds-c-icon-color-foreground-default: #2e844a;
+}
+
+.check-icon_error {
+    --slds-c-icon-color-foreground-default: #ba0517;
+}
+
+.check-icon_warning {
+ /* status icon on white needs 3:1 (1.4.11)— #8c4b02 passes and reads amber. */
+    --slds-c-icon-color-foreground-default: #8c4b02;
+}
+
+.advanced-drawer {
+    border: 1px solid #d8dde6;
+    border-radius: 0.25rem;
+}
+
+.advanced-drawer__toggle {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    width: 100%;
+    padding: 0.75rem 1rem;
+    background: #f3f3f3;
+    border: none;
+    border-radius: 0.25rem;
+    font-weight: 600;
+    font-size: 0.8125rem;
+    color: #181818;
+    cursor: pointer;
+    text-align: left;
+}
+
+.advanced-drawer__toggle:hover {
+    background: #e5e5e5;
+}
+
+.advanced-drawer__content {
+    border-top: 1px solid #d8dde6;
+}
+
+/*
+ * Wrapper for the scrollable step body. Caps the card height so the
+ * sticky footer (kbStickyWizardFooter) stays on-screen on long steps.
+ * 70vh is a balance: long enough to see several fields, short enough
+ * that the footer never leaves the viewport.
+ */
+.wizard-body {
+    max-height: 70vh;
+    overflow-y: auto;
+    position: relative;
+}

@@ -1,0 +1,646 @@
+<template>
+    <lightning-card title="Knowledge Assessment">
+        <div class="slds-p-around_medium">
+            <!-- ──────────────── READINESS HEADER (chrome) ────────────────
+                 Always visible above the tabset so the score is in view on
+                 every tab. Shows the latest run's score + readiness badge, or
+                 the no-assessment empty state when nothing has been scored. -->
+            <template lwc:if={hasLatestAssessment}>
+                <div class="slds-grid slds-grid_align-spread slds-grid_vertical-align-center slds-m-bottom_medium">
+                    <div>
+                        <div class="slds-text-body_small slds-text-color_weak">{readinessScoreLabel}</div>
+                        <div class="slds-text-heading_large">{latestOverallScore}</div>
+                    </div>
+                    <lightning-badge label={latestReadinessStatus} class={latestReadinessBadgeClass}></lightning-badge>
+                </div>
+ <!--— version-context reference: when viewing an older
+                     version's run, clarify the header score is that version's,
+                     and show what the latest version scored. -->
+                <template lwc:if={hasVersionContext}>
+                    <div class="slds-text-body_small slds-text-color_weak slds-m-bottom_medium" role="note">
+                        <lightning-icon icon-name="utility:info" size="xx-small" class="slds-m-right_xx-small"></lightning-icon>
+                        {versionContextLabel}
+                    </div>
+                </template>
+            </template>
+
+ <!--— viewed version was never assessed, but the article was
+                 assessed on another version (e.g. a fresh AI-Fix draft). Show the
+                 legacy score honestly rather than passing another version's data
+                 off as this version's. -->
+            <template lwc:elseif={isUnassessedVersionWithHistory}>
+                <div class="slds-box slds-p-around_medium slds-m-bottom_medium" role="note">
+                    <div class="slds-grid slds-grid_vertical-align-center slds-m-bottom_x-small">
+                        <lightning-icon icon-name="utility:info" size="x-small" class="slds-m-right_x-small"></lightning-icon>
+                        <h3 class="slds-text-heading_small">This version hasn’t been assessed</h3>
+                    </div>
+                    <p class="slds-text-body_small slds-text-color_weak">{legacyAssessmentLabel}</p>
+                </div>
+            </template>
+
+            <template lwc:else>
+                <div class="slds-box slds-text-align_center slds-p-around_medium slds-m-bottom_medium">
+                    <lightning-icon icon-name="standard:metrics" size="small" class="slds-m-bottom_small"></lightning-icon>
+                    <h3 class="slds-text-heading_small slds-m-bottom_x-small">{readinessNoTitle}</h3>
+                    <p class="slds-text-body_small slds-text-color_weak slds-m-bottom_small">{readinessNoBody}</p>
+                    <lightning-button variant="brand" label={readinessNoCta} icon-name="utility:forward" onclick={handleGoToAssessment}></lightning-button>
+                </div>
+            </template>
+
+            <template lwc:if={readinessError}>
+                <div class="slds-notify slds-notify_alert slds-alert_error slds-m-bottom_small" role="alert">
+                    <p>{readinessError}</p>
+                </div>
+            </template>
+
+            <!-- Run selector — only when there's more than one run to choose
+                 between. Drives the Strengths tab; the score header + Issues /
+                 Duplicates stay on the latest run. -->
+            <template lwc:if={hasMultipleRuns}>
+                <div class="slds-m-bottom_medium">
+                    <lightning-combobox
+                        label="Assessment run"
+                        value={selectedRunId}
+                        options={runOptions}
+                        onchange={handleRunChange}
+                        variant="label-stacked">
+                    </lightning-combobox>
+                </div>
+            </template>
+        </div>
+
+        <!-- ──────────────────────── TABSET ────────────────────────
+             Issues / Strengths / Duplicates always render. The Pre-publish
+             check tab is appended only when the KB_PrePublishCheck_Beta
+             custom permission is held — the tabset is never reduced to a
+             single tab, so no special wrapper handling is needed. -->
+        <lightning-tabset variant="scoped">
+
+            <!-- ──────────────── ISSUES TAB ──────────────── -->
+            <lightning-tab label={tabIssuesLabel}>
+                <div class="slds-p-around_medium">
+
+                    <!-- Filters stay visible whenever the article has any issues,
+                         even if the current filter matches none — so the user can
+                         always clear the filter and is never stuck. -->
+                    <template lwc:if={hasIssuesOnArticle}>
+                        <!-- Filters row -->
+                        <div class="slds-grid slds-gutters_xx-small slds-wrap slds-m-bottom_small">
+                            <div class="slds-col slds-size_1-of-2">
+                                <lightning-combobox
+                                    label="Dimension"
+                                    value={dimensionFilter}
+                                    options={dimensionOptions}
+                                    onchange={handleDimensionChange}
+                                    variant="label-stacked">
+                                </lightning-combobox>
+                            </div>
+                            <div class="slds-col slds-size_1-of-2">
+                                <lightning-combobox
+                                    label="Sort by"
+                                    value={sortBy}
+                                    options={sortOptions}
+                                    onchange={handleSortChange}
+                                    variant="label-stacked">
+                                </lightning-combobox>
+                            </div>
+                        </div>
+ <!--— status toggles: default off = actionable-only
+                             (Open/Error/Queued). Reveal resolved / discarded
+                             history without cluttering the default view. -->
+                        <div class="slds-grid slds-gutters_small slds-wrap slds-m-bottom_x-small">
+                            <lightning-input
+                                type="toggle"
+                                label="Show resolved"
+                                message-toggle-active="On"
+                                message-toggle-inactive="Off"
+                                checked={showResolvedRecs}
+                                onchange={handleToggleResolvedRecs}
+                                class="slds-col">
+                            </lightning-input>
+                            <lightning-input
+                                type="toggle"
+                                label="Show discarded"
+                                message-toggle-active="On"
+                                message-toggle-inactive="Off"
+                                checked={showDiscardedRecs}
+                                onchange={handleToggleDiscardedRecs}
+                                class="slds-col">
+                            </lightning-input>
+                        </div>
+                        <div class="slds-grid slds-grid_align-spread slds-grid_vertical-align-center slds-m-bottom_small">
+                            <span class="slds-text-body_small slds-text-color_weak">{filteredOpenIssueCount} issue(s) shown</span>
+                            <lightning-button label="Clear filters" variant="base" onclick={handleClearFilters}></lightning-button>
+                        </div>
+
+                        <!-- Issues that survived the filter. Freshness rows (manual)
+                             ride alongside AI-fixable rows here; dedup/conflict rows
+                             live on the Duplicates & Conflicts tab. -->
+                        <template lwc:if={isViewingPastRun}>
+                            <div data-id="past-run-note" class="slds-text-body_small slds-text-color_weak slds-m-bottom_small">
+                                <lightning-icon icon-name="utility:info" size="xx-small" class="slds-m-right_xx-small"></lightning-icon>
+                                Viewing a past run — Fix with AI acts on the latest run.
+                            </div>
+                        </template>
+
+                        <template lwc:if={hasVisibleIssues}>
+                            <c-kb-recommendations-list
+                                ai-fixable-issues={aiFixableIssues}
+                                manual-only-issues={freshnessIssues}
+                                read-only={isViewingPastRun}
+                                onopenfixmodal={handleOpenFixModal}
+                                onresolvecandidate={handleResolveCandidate}
+                                oneditasdraft={handleEditAsDraft}>
+                            </c-kb-recommendations-list>
+                        </template>
+
+ <!--— the article has recs but the current toggles /
+                             filter hide them all (e.g. everything is resolved and
+                             "Show resolved" is off). Neutral hint, not a success
+                             state — point the user at the toggles / Clear. -->
+                        <template lwc:if={hasNoMatchingIssues}>
+                            <div data-id="issues-no-match" class="slds-box slds-box_xx-small slds-text-align_center slds-text-color_weak slds-p-around_small">
+                                <p class="slds-text-body_small">No recommendations match the current view. Turn on <strong>Show resolved</strong> / <strong>Show discarded</strong> or <lightning-button label="clear filters" variant="base" onclick={handleClearFilters}></lightning-button> to see more.</p>
+                            </div>
+                        </template>
+                    </template>
+
+ <!--— viewed version was never assessed: don't imply it's
+                         clean. Say so, and don't leak another version's issues. -->
+                    <template lwc:if={isUnassessedVersionWithHistory}>
+                        <div data-id="issues-not-assessed" class="slds-box slds-text-align_center slds-p-around_medium slds-text-color_weak">
+                            <lightning-icon icon-name="utility:info" size="small" class="slds-m-bottom_x-small"></lightning-icon>
+                            <p class="slds-text-body_regular">This version hasn’t been assessed, so it has no issues to show. Run an assessment on it, or use <strong>Preview results</strong> to score it on demand.</p>
+                        </div>
+                    </template>
+
+ <!--— assessed version that produced no recommendations of
+                         any status. Neutral (not a "success") empty-state. -->
+                    <template lwc:elseif={hasNoRecsAtAll}>
+                        <div data-id="issues-none" class="slds-box slds-text-align_center slds-p-around_medium slds-text-color_weak">
+                            <lightning-icon icon-name="utility:info" size="small" class="slds-m-bottom_x-small"></lightning-icon>
+                            <p class="slds-text-body_regular">This assessment produced no recommendations for this article.</p>
+                        </div>
+                    </template>
+                </div>
+            </lightning-tab>
+
+            <!-- ──────────────── STRENGTHS TAB ──────────────── -->
+            <lightning-tab label={tabStrengthsLabel}>
+                <div class="slds-p-around_medium">
+                    <template lwc:if={hasStrengths}>
+                        <div class="slds-m-bottom_small">
+                            <span class="slds-text-body_small slds-text-color_weak">{strengthCount} strength(s)</span>
+                        </div>
+                        <ul class="slds-has-dividers_bottom-space">
+                            <template for:each={selectedRunStrengths} for:item="strength">
+                                <li key={strength.key} class="slds-item slds-p-vertical_x-small">
+                                    <div class="slds-grid slds-wrap slds-grid_vertical-align-center slds-m-bottom_xx-small">
+                                        <lightning-badge label={strength.dimension} class="slds-m-right_xx-small"></lightning-badge>
+                                    </div>
+                                    <p class="slds-text-body_small">{strength.analysisText}</p>
+                                </li>
+                            </template>
+                        </ul>
+                    </template>
+
+ <!--— unassessed version: no run, so no strengths to show. -->
+                    <template lwc:elseif={isUnassessedVersionWithHistory}>
+                        <div data-id="strengths-not-assessed" class="slds-box slds-text-align_center slds-p-around_medium">
+                            <lightning-icon icon-name="utility:info" size="small" class="slds-m-bottom_x-small"></lightning-icon>
+                            <p class="slds-text-body_small slds-text-color_weak">This version hasn’t been assessed yet, so it has no recorded strengths.</p>
+                        </div>
+                    </template>
+
+                    <template lwc:else>
+                        <div class="slds-box slds-text-align_center slds-p-around_medium">
+                            <lightning-icon icon-name="utility:success" size="small" class="slds-m-bottom_x-small"></lightning-icon>
+                            <p class="slds-text-body_small slds-text-color_weak">No strengths recorded for this run.</p>
+                        </div>
+                    </template>
+                </div>
+            </lightning-tab>
+
+            <!-- ──────────────── DUPLICATES TAB ──────────────── -->
+            <lightning-tab label={tabDuplicatesLabel}>
+                <div class="slds-p-around_medium">
+                    <template lwc:if={hasDedupIssues}>
+                        <ul class="slds-has-dividers_bottom-space">
+                            <template for:each={dedupIssues} for:item="issue">
+                                <li key={issue.key} class="slds-item slds-p-vertical_x-small">
+                                    <div class="slds-grid slds-wrap slds-grid_vertical-align-center slds-m-bottom_xx-small">
+                                        <lightning-badge label={issue.dimension} class="slds-m-right_xx-small"></lightning-badge>
+                                        <template lwc:if={issue.impact}>
+                                            <span class={issue.impactBadgeClass}>{issue.impactLabel}</span>
+                                        </template>
+                                        <template lwc:if={issue.showStatus}>
+                                            <span class="slds-badge slds-m-left_xx-small">{issue.status}</span>
+                                        </template>
+                                    </div>
+                                    <p class="slds-text-body_small slds-m-bottom_xx-small">{issue.recommendation}</p>
+                                    <lightning-button
+                                        label="Resolve in Action Center"
+                                        variant="base"
+                                        data-rec-id={issue.recId}
+                                        data-is-dedup="true"
+                                        onclick={handleResolveCandidate}>
+                                    </lightning-button>
+                                </li>
+                            </template>
+                        </ul>
+                    </template>
+
+                    <template lwc:else>
+                        <div class="slds-box slds-text-align_center slds-p-around_medium">
+                            <lightning-icon icon-name="utility:success" size="small" class="slds-m-bottom_x-small"></lightning-icon>
+                            <p class="slds-text-body_small slds-text-color_weak">No duplicate or conflict findings.</p>
+                        </div>
+                    </template>
+                </div>
+            </lightning-tab>
+
+ <!-- ──────────────── PREVIEW RESULTS TAB ──────────────── -->
+            <!-- On-demand scoring of the four self-contained dimensions against
+                 this article's CURRENT content — no run created, nothing saved.
+                 Scoring runs live LLM scorers, so it's behind an explicit button
+                 (never auto-run on tab open). Works on any version, incl. an
+                 AI-Fix draft: open the draft → Preview results. -->
+            <lightning-tab label={tabPreviewLabel}>
+                <div class="slds-p-around_medium">
+
+                    <!-- Idle: explain + run button -->
+                    <template lwc:if={previewIdle}>
+                        <p class="slds-text-body_small slds-text-color_weak slds-m-bottom_small">
+                            See how this article would score on Completeness, Structure,
+                            Clarity and Freshness if you published and assessed it now —
+                            without creating an assessment run. Duplication and Conflict
+                            aren't included here; they require a full pipeline run.
+                        </p>
+                        <p class="slds-text-body_small slds-text-color_weak slds-m-bottom_medium">
+                            Running a preview makes live Einstein calls and consumes credits.
+                        </p>
+                        <lightning-button
+                            variant="brand"
+                            label="Preview results"
+                            icon-name="utility:preview"
+                            onclick={handleRunPreview}></lightning-button>
+                    </template>
+
+                    <!-- Loading -->
+                    <template lwc:if={previewLoading}>
+                        <div class="slds-align_absolute-center slds-p-around_large" role="status">
+                            <lightning-spinner alternative-text="Scoring…" size="small"></lightning-spinner>
+                            <span class="slds-m-left_small slds-text-body_small slds-text-color_weak">
+                                Scoring this article…
+                            </span>
+                        </div>
+                    </template>
+
+                    <!-- Error -->
+                    <template lwc:if={previewHasError}>
+                        <div role="alert" class="slds-text-color_error slds-text-body_small slds-m-bottom_small">
+                            {previewError}
+                        </div>
+                        <lightning-button
+                            variant="neutral"
+                            label="Try again"
+                            icon-name="utility:refresh"
+                            onclick={handleRunPreview}></lightning-button>
+                    </template>
+
+                    <!-- Finished but nothing scorable (e.g. empty / no-body article) -->
+                    <template lwc:if={previewHasNoScorableContent}>
+                        <div role="status" class="slds-text-body_small slds-text-color_weak slds-m-bottom_small">
+                            This article has no scorable content yet — add a title, summary
+                            or body, then preview again.
+                        </div>
+                        <lightning-button
+                            variant="neutral"
+                            label="Re-run preview"
+                            icon-name="utility:refresh"
+                            onclick={handleRunPreview}></lightning-button>
+                    </template>
+
+                    <!-- Result -->
+                    <template lwc:if={hasPreviewResult}>
+                        <div role="status">
+                            <div class="slds-box slds-box_x-small slds-grid slds-grid_align-spread slds-grid_vertical-align-center slds-m-bottom_medium">
+                                <div>
+                                    <div class="slds-text-body_small slds-text-color_weak">Predicted readiness score</div>
+                                    <div class="slds-text-heading_large">{previewOverallScore}</div>
+                                </div>
+                                <lightning-badge label={previewReadinessStatus} class={previewReadinessBadgeClass}></lightning-badge>
+                            </div>
+
+                            <!-- Dimension scores summary -->
+                            <ul class="slds-has-dividers_bottom-space slds-m-bottom_medium">
+                                <template for:each={previewDimensionScores} for:item="dim">
+                                    <li key={dim.key} class="slds-item slds-p-vertical_x-small">
+                                        <div class="slds-grid slds-grid_align-spread slds-grid_vertical-align-center">
+                                            <span class="slds-text-body_regular">{dim.label}</span>
+                                            <span class={dim.scoreClass}><strong>{dim.score}</strong></span>
+                                        </div>
+                                    </li>
+                                </template>
+                            </ul>
+
+                            <!-- Issues / Strengths sub-tabs -->
+                            <lightning-tabset variant="scoped">
+                                <lightning-tab label={previewIssuesTabLabel}>
+                                    <div class="slds-p-around_small">
+                                        <template lwc:if={hasPreviewIssues}>
+                                            <div class="slds-m-bottom_small">
+                                                <span class="slds-text-body_small slds-text-color_weak">{previewIssueCount} issue(s)</span>
+                                            </div>
+                                            <c-kb-recommendations-list
+                                                ai-fixable-issues={previewIssues}
+                                                read-only="true">
+                                            </c-kb-recommendations-list>
+                                        </template>
+
+                                        <!-- Informational notes: a dimension with only a
+                                             reasoning string (e.g. the Einstein-failure
+                                             fallback baseline) — surfaced so the score-60
+                                             caveat is visible, clearly not a detected issue. -->
+                                        <template lwc:if={hasPreviewNotes}>
+                                            <template for:each={previewNotes} for:item="note">
+                                                <div key={note.key} data-id="preview-note" class="slds-box slds-box_x-small slds-theme_info slds-m-bottom_small">
+                                                    <div class="slds-grid slds-grid_vertical-align-center slds-m-bottom_xx-small">
+                                                        <lightning-icon icon-name="utility:info" size="xx-small" class="slds-m-right_xx-small" aria-hidden="true"></lightning-icon>
+                                                        <lightning-badge label={note.dimension}></lightning-badge>
+                                                    </div>
+                                                    <p class="slds-text-body_small">{note.text}</p>
+                                                </div>
+                                            </template>
+                                        </template>
+
+                                        <template lwc:if={previewIssuesTabEmpty}>
+                                            <div class="slds-box slds-theme_success slds-text-align_center slds-p-around_medium">
+                                                <lightning-icon icon-name="utility:success" size="small" variant="inverse" class="slds-m-bottom_x-small"></lightning-icon>
+                                                <p class="slds-text-body_regular">No issues detected in this preview.</p>
+                                            </div>
+                                        </template>
+                                    </div>
+                                </lightning-tab>
+
+                                <lightning-tab label={previewStrengthsTabLabel}>
+                                    <div class="slds-p-around_small">
+                                        <template lwc:if={hasPreviewStrengths}>
+                                            <div class="slds-m-bottom_small">
+                                                <span class="slds-text-body_small slds-text-color_weak">{previewStrengthCount} strength(s)</span>
+                                            </div>
+                                            <ul class="slds-has-dividers_bottom-space">
+                                                <template for:each={previewStrengths} for:item="strength">
+                                                    <li key={strength.key} class="slds-item slds-p-vertical_x-small">
+                                                        <div class="slds-grid slds-wrap slds-grid_vertical-align-center slds-m-bottom_xx-small">
+                                                            <lightning-badge label={strength.dimension} class="slds-m-right_xx-small"></lightning-badge>
+                                                        </div>
+                                                        <p class="slds-text-body_small">{strength.analysisText}</p>
+                                                    </li>
+                                                </template>
+                                            </ul>
+                                        </template>
+                                        <template lwc:else>
+                                            <div class="slds-box slds-text-align_center slds-p-around_medium">
+                                                <lightning-icon icon-name="utility:success" size="small" class="slds-m-bottom_x-small"></lightning-icon>
+                                                <p class="slds-text-body_small slds-text-color_weak">No strengths recorded in this preview.</p>
+                                            </div>
+                                        </template>
+                                    </div>
+                                </lightning-tab>
+                            </lightning-tabset>
+
+                            <p class="slds-text-body_small slds-text-color_weak slds-m-top_small">
+                                Preview only — no assessment run was created and nothing was saved.
+                            </p>
+                        </div>
+                        <lightning-button
+                            class="slds-m-top_x-small"
+                            variant="neutral"
+                            label="Re-run preview"
+                            icon-name="utility:refresh"
+                            onclick={handleRunPreview}></lightning-button>
+                    </template>
+
+                </div>
+            </lightning-tab>
+
+            <!-- ─────────────── PRE-PUBLISH CHECK TAB ─────────────── -->
+            <!-- Gated behind the KB_PrePublishCheck_Beta custom permission.
+                 Appended only when held — the other three tabs always render,
+                 so the tabset is never a lone tab. -->
+            <template lwc:if={showPrePublishTab}>
+            <lightning-tab label={tabPrePublishLabel}>
+
+                <!-- Alpha warning. Custom permission gates this tab off by
+                     default; if an admin self-assigns to test, this banner
+                     makes the not-ready-for-prod state explicit. Remove the
+                     banner when the feature graduates from alpha. -->
+                <div class="slds-p-horizontal_medium slds-p-top_medium">
+                    <div class="slds-notify slds-notify_alert slds-theme_warning" role="alert">
+                        <lightning-icon icon-name="utility:warning" size="x-small" variant="inverse" class="slds-m-right_x-small" aria-hidden="true"></lightning-icon>
+                        <span>
+                            <strong>Alpha feature.</strong>
+                            This pre-publish check is incomplete and only catches duplicates and contradictions today. It is not yet a reliable gate against publishing problematic articles. Use at your own discretion.
+                        </span>
+                    </div>
+                </div>
+
+                <!-- Idle: check button -->
+                <template lwc:if={showIdleState}>
+                    <div class="slds-p-around_medium">
+                        <p class="slds-text-body_regular slds-m-bottom_small">
+                            {checkButtonDescription}
+                        </p>
+                        <template lwc:if={usingSoqlFallback}>
+                            <div class="slds-box slds-box_x-small slds-theme_info slds-m-bottom_small">
+                                <p class="slds-text-body_small">
+                                    <lightning-icon icon-name="utility:info" size="xx-small" class="slds-m-right_xx-small" aria-hidden="true"></lightning-icon>
+                                    Using SOQL keyword matching (Data Cloud vector search not configured). Results may be less precise. Configure vector search in Setup Wizard Step 4 for higher quality.
+                                </p>
+                            </div>
+                        </template>
+                        <lightning-button
+                            label={checkButtonLabel}
+                            variant="brand"
+                            onclick={handleVerifyDraft}
+                            icon-name="utility:einstein"
+                            disabled={isCheckButtonDisabled}>
+                        </lightning-button>
+                    </div>
+                </template>
+
+                <!-- Processing -->
+                <template lwc:if={isProcessing}>
+                    <div class="slds-p-around_medium slds-grid slds-grid_vertical-align-center">
+                        <lightning-spinner alternative-text="Checking for conflicts" size="small"></lightning-spinner>
+                        <span class="slds-m-left_small">Analyzing article against knowledge base...</span>
+                    </div>
+                </template>
+
+                <!-- Clean -->
+                <template lwc:if={isClean}>
+                    <div class="slds-p-around_medium slds-theme_success slds-theme_alert-texture">
+                        <div class="slds-grid slds-grid_vertical-align-center slds-m-bottom_small">
+                            <lightning-icon icon-name="utility:success" variant="inverse" size="small"></lightning-icon>
+                            <span class="slds-m-left_small slds-text-heading_small">No conflicts detected</span>
+                        </div>
+                        <p class="slds-m-bottom_medium">This article is consistent with the published knowledge base.</p>
+
+                        <template lwc:if={isDraft}>
+                            <lightning-button
+                                label="Publish"
+                                variant="success"
+                                onclick={handlePublish}
+                                icon-name="utility:upload">
+                            </lightning-button>
+                        </template>
+
+                        <lightning-button
+                            label="Dismiss"
+                            variant="neutral"
+                            onclick={handleCancel}
+                            class="slds-m-left_x-small">
+                        </lightning-button>
+                    </div>
+                </template>
+
+                <!-- Conflicts found -->
+                <template lwc:if={hasConflicts}>
+                    <div class="slds-p-around_medium">
+                        <div class="slds-notify slds-notify_alert slds-alert_warning slds-m-bottom_medium" role="alert">
+                            <lightning-icon icon-name="utility:warning" variant="warning" size="small" aria-hidden="true"></lightning-icon>
+                            <span class="slds-m-left_small">
+                                {conflictCount} potential issue(s) found — review each item below
+                            </span>
+                        </div>
+
+                        <template for:each={conflicts} for:item="conflict" for:index="index">
+                            <div key={conflict.id} class="slds-box slds-m-bottom_small conflict-card">
+                                <div class="slds-grid slds-grid_align-spread slds-grid_vertical-align-start">
+                                    <div class="slds-col">
+                                        <div class="slds-grid slds-grid_vertical-align-center slds-m-bottom_x-small">
+                                            <lightning-badge label={conflict.conflictType} class={conflict.badgeClass}></lightning-badge>
+                                            <span class="slds-m-left_small slds-text-title_bold">{conflict.conflictingArticleTitle}</span>
+                                        </div>
+                                        <p class="slds-text-body_regular slds-m-bottom_small">{conflict.reasoning}</p>
+                                        <p class="slds-text-body_small slds-text-color_weak">
+                                            Matching article: {conflict.conflictingArticleId}
+                                        </p>
+                                    </div>
+                                    <div class="slds-col slds-shrink-none slds-m-left_medium">
+                                        <lightning-input
+                                            type="checkbox"
+                                            label="Reviewed"
+                                            data-index={index}
+                                            checked={conflict.reviewed}
+                                            onchange={handleConflictReviewToggle}>
+                                        </lightning-input>
+                                    </div>
+                                </div>
+                            </div>
+                        </template>
+
+                        <div class="slds-m-top_small slds-m-bottom_medium">
+                            <lightning-progress-bar value={reviewProgress} size="small"></lightning-progress-bar>
+                            <p class="slds-text-body_small slds-m-top_xx-small">
+                                {reviewedCount} of {conflictCount} issues reviewed
+                            </p>
+                        </div>
+
+                        <template lwc:if={isDraft}>
+                            <template lwc:if={canBypass}>
+                                <div class="slds-box slds-theme_shade slds-m-top_medium">
+                                    <h3 class="slds-text-heading_small slds-m-bottom_small">Manager Override</h3>
+                                    <template lwc:if={allReviewed}>
+                                        <p class="slds-text-body_regular slds-m-bottom_small">
+                                            All issues reviewed. Provide a reason to proceed with publishing.
+                                        </p>
+                                        <lightning-textarea
+                                            label="Bypass Reason (required)"
+                                            value={bypassReason}
+                                            onchange={handleBypassReasonChange}
+                                            placeholder="Explain why these warnings can be safely ignored..."
+                                            max-length="2000">
+                                        </lightning-textarea>
+                                        <div class="slds-m-top_small">
+                                            <lightning-button
+                                                label="Publish Anyway"
+                                                variant="destructive"
+                                                onclick={handleBypassPublish}
+                                                disabled={bypassReasonEmpty}
+                                                icon-name="utility:warning">
+                                            </lightning-button>
+                                        </div>
+                                    </template>
+                                    <template lwc:else>
+                                        <p class="slds-text-body_regular slds-text-color_weak">
+                                            Review all {conflictCount} issue(s) above before you can override and publish.
+                                        </p>
+                                    </template>
+                                </div>
+                            </template>
+                        </template>
+
+                        <template lwc:if={isPublished}>
+                            <div class="slds-box slds-theme_shade slds-m-top_medium">
+                                <h3 class="slds-text-heading_small slds-m-bottom_small">Action Required</h3>
+                                <p class="slds-text-body_regular slds-m-bottom_small">
+                                    This published article has conflicts with other articles. You can create a new draft version to address these issues.
+                                </p>
+                                <lightning-button
+                                    label="Create Draft Version to Fix"
+                                    variant="brand"
+                                    onclick={handleCreateDraft}
+                                    icon-name="utility:edit">
+                                </lightning-button>
+                            </div>
+                        </template>
+
+                        <div class="slds-m-top_medium">
+                            <lightning-button
+                                label="Dismiss"
+                                variant="neutral"
+                                onclick={handleCancel}>
+                            </lightning-button>
+                        </div>
+                    </div>
+                </template>
+
+                <!-- Error -->
+                <template lwc:if={hasError}>
+                    <div class="slds-p-around_medium">
+                        <div class="slds-notify slds-notify_alert slds-alert_error slds-m-bottom_medium" role="alert">
+                            <lightning-icon icon-name="utility:error" variant="error" size="small" aria-hidden="true"></lightning-icon>
+                            <span class="slds-m-left_small">{errorMessage}</span>
+                        </div>
+                        <lightning-button
+                            label="Retry Check"
+                            variant="brand"
+                            onclick={handleVerifyDraft}
+                            icon-name="utility:refresh">
+                        </lightning-button>
+                        <template lwc:if={canBypass}>
+                            <template lwc:if={isDraft}>
+                                <lightning-button
+                                    label="Publish Without Check"
+                                    variant="destructive"
+                                    onclick={handlePublishWithoutCheck}
+                                    class="slds-m-left_x-small">
+                                </lightning-button>
+                            </template>
+                        </template>
+                        <lightning-button
+                            label="Cancel"
+                            variant="neutral"
+                            onclick={handleCancel}
+                            class="slds-m-left_x-small">
+                        </lightning-button>
+                    </div>
+                </template>
+            </lightning-tab>
+            </template>
+
+        </lightning-tabset>
+    </lightning-card>
+</template>

@@ -1,0 +1,179 @@
+<template>
+    <div class="slds-box slds-theme_default">
+        <div class="slds-grid slds-grid_align-spread slds-m-bottom_medium">
+            <h2 class="slds-text-heading_medium">All Assessments</h2>
+            <lightning-button
+                variant="brand"
+                label="New Assessment"
+                icon-name="utility:add"
+                onclick={handleNewAssessment}>
+            </lightning-button>
+        </div>
+
+ <!--: searchable run filter. Narrows the list to one run; "All
+             assessments" resets. Only shown once at least one run exists. -->
+        <template lwc:if={showRunFilter}>
+            <div class="slds-m-bottom_medium">
+                <c-kb-run-filter
+                    selected-run-id={selectedRunId}
+                    onrunselect={handleRunSelect}>
+                </c-kb-run-filter>
+            </div>
+        </template>
+
+        <!-- Loading state -->
+        <template lwc:if={isLoading}>
+            <div class="slds-text-align_center slds-p-around_large">
+                <lightning-spinner alternative-text="Loading" size="medium"></lightning-spinner>
+            </div>
+        </template>
+
+        <!-- Error state -->
+        <template lwc:if={error}>
+            <div class="slds-notify slds-notify_alert slds-alert_error" role="alert">
+                <span class="slds-assistive-text">error</span>
+                <h2>{error}</h2>
+            </div>
+        </template>
+
+ <!-- No runs— nudge the user to start their first assessment -->
+        <template lwc:if={noRuns}>
+            <div class="slds-illustration slds-illustration_small slds-text-align_center slds-p-around_large">
+                <h3 class="slds-text-heading_small slds-m-bottom_small">No assessments yet</h3>
+                <p class="slds-text-body_regular slds-m-bottom_medium">
+                    Start your first assessment to score your knowledge base and surface improvement actions.
+                </p>
+                <lightning-button
+                    variant="brand"
+                    label="Start your first assessment"
+                    icon-name="utility:add"
+                    onclick={handleNewAssessment}>
+                </lightning-button>
+            </div>
+        </template>
+
+        <!-- History list -->
+        <template lwc:if={hasRuns}>
+            <div class="history-list">
+                <template for:each={filteredRuns} for:item="run">
+                    <div key={run.runId} class="history-item" data-run-id={run.runId} data-status={run.status} data-run-name={run.displayName} data-description={run.description} data-created-date={run.createdDate} data-scan-start-time={run.scanStartTime} onclick={handleViewRun} onkeydown={handleRowKeydown} role="button" tabindex="0" aria-label={run.openRunLabel}>
+
+                        <div class="slds-grid slds-grid_align-spread slds-grid_vertical-align-center">
+                            <div class="slds-grid slds-grid_vertical-align-center">
+                                <div class={run.statusClass}>
+                                    <template lwc:if={run.isRunning}>
+                                        <div class="score-circle circle-running">
+                                            <div class="dot-spinner">
+                                                <span class="dot"></span>
+                                                <span class="dot"></span>
+                                                <span class="dot"></span>
+                                            </div>
+                                        </div>
+                                    </template>
+                                    <template lwc:else>
+                                        <span class="score-circle">{run.displayScore}</span>
+                                    </template>
+                                </div>
+                                <div class="slds-m-left_medium">
+                                    <p class="slds-text-heading_small">
+                                        {run.displayName}
+                                        <template lwc:if={run.statusBadge}>
+                                            <span class={run.statusBadge.cssClass}>{run.statusBadge.label}</span>
+                                        </template>
+                                    </p>
+                                    <p class="slds-text-body_small slds-text-color_weak">
+                                        {run.formattedDate}
+                                        <template lwc:if={run.durationDisplay}> · took {run.durationDisplay}</template>
+                                        <template lwc:if={run.ranByDisplay}> · by {run.ranByDisplay}</template>
+                                    </p>
+                                </div>
+                            </div>
+                            <div class="slds-grid slds-grid_vertical-align-center">
+                                <div class="run-stats slds-m-right_medium">
+                                    <template lwc:if={run.isRunning}>
+                                        <span class="stat-total">{run.totalArticles} articles</span>
+                                    </template>
+                                    <template lwc:else>
+                                        <span class="stat stat-ready" title="Ready">{run.readyCount}</span>
+                                        <span class="stat stat-needs-work" title="Needs Work">{run.needsWorkCount}</span>
+                                        <span class="stat stat-not-ready" title="Not Ready">{run.notReadyCount}</span>
+                                        <span class="stat-total">{run.totalArticles} articles</span>
+                                    </template>
+                                </div>
+ <!--: jump straight to this run's recommendations in the
+                                     Action Center. Completed runs only — nothing to act on
+                                     while scoring or after a failure. -->
+                                <template lwc:if={run.isCompleted}>
+                                    <lightning-button
+                                        label="View Actions"
+                                        variant="neutral"
+                                        icon-name="utility:forward"
+                                        data-run-id={run.runId}
+                                        onclick={handleViewActions}
+                                        class="slds-m-right_x-small view-actions-btn">
+                                    </lightning-button>
+ <!--: destructive rerun— re-assess the same scope,
+                                         wiping this run's scores + recommendations first.
+                                         Confirmation modal gates the action. Completed runs
+                                         only (a running/failed run has no results to rerun). -->
+                                    <lightning-button
+                                        label="Rerun"
+                                        variant="neutral"
+                                        icon-name="utility:refresh"
+                                        data-run-id={run.runId}
+                                        data-run-name={run.displayName}
+                                        onclick={handleRerunClick}
+                                        class="slds-m-right_x-small rerun-btn">
+                                    </lightning-button>
+                                </template>
+ <!--: Cancel control for running rows. Calls the existing
+                                     KBAssessmentController.cancelAssessmentRun. -->
+                                <template lwc:if={run.isRunning}>
+                                    <lightning-button
+                                        label="Cancel"
+                                        variant="neutral"
+                                        icon-name="utility:stop"
+                                        data-run-id={run.runId}
+                                        onclick={handleCancelRun}
+                                        class="slds-m-right_x-small cancel-btn">
+                                    </lightning-button>
+                                </template>
+ <!--: clone— start a NEW run over the same
+                                     articles, prefilling the new-assessment modal
+                                     ("Copy of …", editable). Non-destructive: the
+                                     source run is untouched, so history is kept.
+                                     Available on any non-running row (a failed run
+                                     is still clonable — its definition survives). -->
+                                <lightning-button
+                                    label="Clone"
+                                    variant="neutral"
+                                    icon-name="utility:copy"
+                                    data-run-id={run.runId}
+                                    onclick={handleCloneRun}
+                                    disabled={run.cloneDisabled}
+                                    title={run.cloneTitle}
+                                    class="slds-m-right_x-small clone-btn">
+                                </lightning-button>
+                                <lightning-button-icon
+                                    icon-name="utility:delete"
+                                    variant="bare"
+                                    alternative-text="Delete"
+                                    data-run-id={run.runId}
+                                    onclick={handleDeleteRun}
+                                    disabled={run.isRunning}
+                                    class="delete-btn">
+                                </lightning-button-icon>
+                                <lightning-icon
+                                    icon-name="utility:chevronright"
+                                    size="x-small"
+                                    class="slds-m-left_small chevron-icon"
+                                    aria-hidden="true">
+                                </lightning-icon>
+                            </div>
+                        </div>
+                    </div>
+                </template>
+            </div>
+        </template>
+    </div>
+</template>

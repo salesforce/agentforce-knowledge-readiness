@@ -1,0 +1,18 @@
+.group-header {
+    color: #3e3e3c;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    font-size: 0.75rem;
+}
+
+.group-note {
+    font-weight: normal;
+    text-transform: none;
+    color: #706e6b;
+    letter-spacing: normal;
+}
+
+.field-list {
+    column-count: 2;
+    column-gap: 1rem;
+}

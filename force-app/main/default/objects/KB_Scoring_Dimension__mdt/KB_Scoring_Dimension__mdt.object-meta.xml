@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomObject xmlns="http://soap.sforce.com/2006/04/metadata">
+    <description>Registry of scoring dimensions. Each active record defines one dimension the scorer can run. Adding a new dimension is a deploy of one metadata record + one Apex scorer class — no schema change required.</description>
+    <label>KB Scoring Dimension</label>
+    <pluralLabel>KB Scoring Dimensions</pluralLabel>
+    <visibility>Public</visibility>
+</CustomObject>

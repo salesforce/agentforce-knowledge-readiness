@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomObject xmlns="http://soap.sforce.com/2006/04/metadata">
+    <deploymentStatus>Deployed</deploymentStatus>
+    <description>AI-rewritten draft candidate from the AI Fix flow, awaiting Knowledge Manager review.</description>
+    <enableActivities>false</enableActivities>
+    <enableReports>true</enableReports>
+    <enableSearch>true</enableSearch>
+    <label>Enrichment Candidate</label>
+    <nameField>
+        <displayFormat>EC-{0000}</displayFormat>
+        <label>Candidate Number</label>
+        <type>AutoNumber</type>
+    </nameField>
+    <pluralLabel>Enrichment Candidates</pluralLabel>
+    <sharingModel>ControlledByParent</sharingModel>
+</CustomObject>

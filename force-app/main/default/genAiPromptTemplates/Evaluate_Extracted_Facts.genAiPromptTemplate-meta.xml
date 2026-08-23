@@ -1,0 +1,254 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<GenAiPromptTemplate xmlns="http://soap.sforce.com/2006/04/metadata">
+    <activeVersionIdentifier>dIRBZxdJBYVmvmwv4/3DkrD7prMYAANFTVuvFEZTzUI=_5</activeVersionIdentifier>
+    <developerName>Evaluate_Extracted_Facts</developerName>
+    <masterLabel>Evaluate_Extracted_Facts</masterLabel>
+    <overridable>false</overridable>
+    <templateVersions>
+        <content>You are a senior Knowledge Base auditor. Compare the facts of two knowledge articles and determine if they are semantic duplicates. They are duplicates if they resolve the exact same user problem with the exact same technical steps.
+
+Article A Facts:
+{!$Input:ArticleA_State}
+
+Article B Facts:
+{!$Input:ArticleB_State}
+
+Output strictly as JSON, no markdown, no code blocks:
+{&quot;is_duplicate&quot;: true, &quot;confidence_score&quot;: 85, &quot;reasoning&quot;: &quot;Both articles describe the same VPN reset procedure...&quot;}
+
+</content>
+        <inputs>
+            <apiName>ArticleA_State</apiName>
+            <definition>primitive://String</definition>
+            <masterLabel>ArticleA_State</masterLabel>
+            <referenceName>Input:ArticleA_State</referenceName>
+            <required>true</required>
+        </inputs>
+        <inputs>
+            <apiName>ArticleB_State</apiName>
+            <definition>primitive://String</definition>
+            <masterLabel>ArticleB_State</masterLabel>
+            <referenceName>Input:ArticleB_State</referenceName>
+            <required>true</required>
+        </inputs>
+        <primaryModel>testTemp0_CM_12l_OKM89276f35</primaryModel>
+        <status>Published</status>
+        <versionIdentifier>dIRBZxdJBYVmvmwv4/3DkrD7prMYAANFTVuvFEZTzUI=_1</versionIdentifier>
+    </templateVersions>
+    <templateVersions>
+        <content>You are a senior Knowledge Base auditor performing STRICT duplicate detection.
+
+Two articles are duplicates ONLY if ALL of these are true:
+1. They solve the EXACT SAME user problem (not just the same general topic)
+2. They describe the SAME technical steps or resolution
+3. A user reading one article would get NO additional value from the other
+
+Two articles are NOT duplicates if:
+- They cover different topics (e.g., Wi-Fi vs printers, backups vs firewalls)
+- They solve different problems within the same domain
+- They describe different procedures, even if the domain is similar
+- They share a broad topic area but address different specific questions (e.g., two articles both about Einstein AI — one about setup, one about troubleshooting — are NOT duplicates and NOT Overlap; they would be retrieved for different customer queries)
+- One is a subset or extension of the other covering genuinely different ground (that is NOT Overlap unless a customer query would retrieve BOTH and get the same answer)
+
+Use &apos;Overlap&apos; ONLY when both articles would answer the SAME specific customer question with substantially the same steps or information, making one redundant. Broad topical similarity alone is NOT Overlap.
+
+Article A Facts:
+{!$Input:ArticleA_State}
+
+Article B Facts:
+{!$Input:ArticleB_State}
+
+Return ONLY valid JSON, no markdown, no code blocks:
+- If NOT duplicate: {&quot;is_duplicate&quot;: false, &quot;confidence_score&quot;: 0, &quot;anomaly_type&quot;: null, &quot;reasoning&quot;: &quot;...&quot;}
+- If duplicate: {&quot;is_duplicate&quot;: true, &quot;confidence_score&quot;: 75-100, &quot;anomaly_type&quot;: &quot;Duplicate&quot;, &quot;reasoning&quot;: &quot;...&quot;}
+- If contradictory facts: {&quot;is_duplicate&quot;: false, &quot;confidence_score&quot;: 80-100, &quot;anomaly_type&quot;: &quot;Contradiction&quot;, &quot;reasoning&quot;: &quot;...&quot;}
+- If partial overlap: {&quot;is_duplicate&quot;: false, &quot;confidence_score&quot;: 70-85, &quot;anomaly_type&quot;: &quot;Overlap&quot;, &quot;reasoning&quot;: &quot;...&quot;}
+
+confidence_score means confidence in the anomaly_type ruling. For non-duplicates with no anomaly, ALWAYS return 0.
+
+</content>
+        <inputs>
+            <apiName>ArticleA_State</apiName>
+            <definition>primitive://String</definition>
+            <masterLabel>ArticleA_State</masterLabel>
+            <referenceName>Input:ArticleA_State</referenceName>
+            <required>true</required>
+        </inputs>
+        <inputs>
+            <apiName>ArticleB_State</apiName>
+            <definition>primitive://String</definition>
+            <masterLabel>ArticleB_State</masterLabel>
+            <referenceName>Input:ArticleB_State</referenceName>
+            <required>true</required>
+        </inputs>
+        <primaryModel>testTemp0_CM_12l_OKM89276f35</primaryModel>
+        <status>Published</status>
+        <versionIdentifier>dIRBZxdJBYVmvmwv4/3DkrD7prMYAANFTVuvFEZTzUI=_2</versionIdentifier>
+    </templateVersions>
+    <templateVersions>
+        <content>You are a senior Knowledge Base auditor performing STRICT duplicate detection.
+
+Two articles are duplicates ONLY if ALL of these are true:
+1. They solve the EXACT SAME user problem (not just the same general topic)
+2. They describe the SAME technical steps or resolution
+3. A user reading one article would get NO additional value from the other
+
+Two articles are NOT duplicates if:
+- They cover different topics (e.g., Wi-Fi vs printers, backups vs firewalls)
+- They solve different problems within the same domain
+- They describe different procedures, even if the domain is similar
+- They share a broad topic area but address different specific questions (e.g., two articles both about Einstein AI — one about setup, one about troubleshooting — are NOT duplicates and NOT Overlap; they would be retrieved for different customer queries)
+- One is a subset or extension of the other covering genuinely different ground (that is NOT Overlap unless a customer query would retrieve BOTH and get the same answer)
+
+Use &apos;Overlap&apos; ONLY when both articles would answer the SAME specific customer question with substantially the same steps or information, making one redundant. Broad topical similarity alone is NOT Overlap.
+
+Article A Facts:
+{!$Input:ArticleA_State}
+
+Article B Facts:
+{!$Input:ArticleB_State}
+
+Return ONLY valid JSON, no markdown, no code blocks:
+- If NOT duplicate: {&quot;is_duplicate&quot;: false, &quot;confidence_score&quot;: 0, &quot;anomaly_type&quot;: null, &quot;reasoning&quot;: &quot;...&quot;}
+- If duplicate: {&quot;is_duplicate&quot;: true, &quot;confidence_score&quot;: 75-100, &quot;anomaly_type&quot;: &quot;Duplicate&quot;, &quot;reasoning&quot;: &quot;...&quot;}
+- If contradictory facts: {&quot;is_duplicate&quot;: false, &quot;confidence_score&quot;: 80-100, &quot;anomaly_type&quot;: &quot;Contradiction&quot;, &quot;reasoning&quot;: &quot;...&quot;}
+- If partial overlap: {&quot;is_duplicate&quot;: false, &quot;confidence_score&quot;: 70-85, &quot;anomaly_type&quot;: &quot;Overlap&quot;, &quot;reasoning&quot;: &quot;...&quot;}
+
+confidence_score means confidence in the anomaly_type ruling.
+
+Rules for confidence_score (0-100):
+- Represents how confident you are in your ruling
+- True duplicates: 70-100
+- Contradictions: 70-100  
+- Partial overlap: 70-85 (only flag Overlap when both articles answer the same specific customer query — broad topical similarity scores 0)
+- No relationship found: 0
+
+</content>
+        <inputs>
+            <apiName>ArticleB_State</apiName>
+            <definition>primitive://String</definition>
+            <masterLabel>ArticleB_State</masterLabel>
+            <referenceName>Input:ArticleB_State</referenceName>
+            <required>true</required>
+        </inputs>
+        <inputs>
+            <apiName>ArticleA_State</apiName>
+            <definition>primitive://String</definition>
+            <masterLabel>ArticleA_State</masterLabel>
+            <referenceName>Input:ArticleA_State</referenceName>
+            <required>true</required>
+        </inputs>
+        <primaryModel>testTemp0_CM_12l_OKM89276f35</primaryModel>
+        <status>Published</status>
+        <versionIdentifier>dIRBZxdJBYVmvmwv4/3DkrD7prMYAANFTVuvFEZTzUI=_3</versionIdentifier>
+    </templateVersions>
+    <templateVersions>
+        <content>You are a senior Knowledge Base auditor performing STRICT duplicate detection.
+
+Two articles are duplicates ONLY if ALL of these are true:
+1. They solve the EXACT SAME user problem (not just the same general topic)
+2. They describe the SAME technical steps or resolution
+3. A user reading one article would get NO additional value from the other
+
+Two articles are NOT duplicates if:
+- They cover different topics (e.g., Wi-Fi vs printers, backups vs firewalls)
+- They solve different problems within the same domain
+- They describe different procedures, even if the domain is similar
+- They share a broad topic area but address different specific questions (e.g., two articles both about Einstein AI — one about setup, one about troubleshooting — are NOT duplicates and NOT Overlap; they would be retrieved for different customer queries)
+- One is a subset or extension of the other covering genuinely different ground (that is NOT Overlap unless a customer query would retrieve BOTH and get the same answer)
+
+Use &apos;Overlap&apos; ONLY when both articles would answer the SAME specific customer question with substantially the same steps or information, making one redundant. Broad topical similarity alone is NOT Overlap.
+
+Article A Facts:
+{!$Input:ArticleA_State}
+
+Article B Facts:
+{!$Input:ArticleB_State}
+
+Return ONLY valid JSON, no markdown, no code blocks:
+- If NOT duplicate: {&quot;is_duplicate&quot;: false, &quot;confidence_score&quot;: 0, &quot;anomaly_type&quot;: null, &quot;reasoning&quot;: &quot;...&quot;}
+- If duplicate: {&quot;is_duplicate&quot;: true, &quot;confidence_score&quot;: 75-100, &quot;anomaly_type&quot;: &quot;Duplicate&quot;, &quot;reasoning&quot;: &quot;...&quot;}
+- If contradictory facts: {&quot;is_duplicate&quot;: false, &quot;confidence_score&quot;: 80-100, &quot;anomaly_type&quot;: &quot;Contradiction&quot;, &quot;reasoning&quot;: &quot;...&quot;}
+- If partial overlap: {&quot;is_duplicate&quot;: false, &quot;confidence_score&quot;: 70-85, &quot;anomaly_type&quot;: &quot;Overlap&quot;, &quot;reasoning&quot;: &quot;...&quot;}
+
+confidence_score means confidence in the anomaly_type ruling.
+
+Rules for confidence_score (0-100):
+- Represents how confident you are in your ruling
+- True duplicates: 70-100
+- Contradictions: 70-100  
+- Partial overlap: 70-85 (only flag Overlap when both articles answer the same specific customer query — broad topical similarity scores 0)
+- No relationship found: 0
+
+</content>
+        <inputs>
+            <apiName>ArticleB_State</apiName>
+            <definition>primitive://String</definition>
+            <masterLabel>ArticleB_State</masterLabel>
+            <referenceName>Input:ArticleB_State</referenceName>
+            <required>true</required>
+        </inputs>
+        <inputs>
+            <apiName>ArticleA_State</apiName>
+            <definition>primitive://String</definition>
+            <masterLabel>ArticleA_State</masterLabel>
+            <referenceName>Input:ArticleA_State</referenceName>
+            <required>true</required>
+        </inputs>
+        <primaryModel>testTemp0_CM_12l_OKM89276f35</primaryModel>
+        <status>Published</status>
+        <versionIdentifier>dIRBZxdJBYVmvmwv4/3DkrD7prMYAANFTVuvFEZTzUI=_4</versionIdentifier>
+    </templateVersions>
+    <templateVersions>
+        <content>You are a senior Knowledge Base auditor performing STRICT duplicate detection.
+
+Two articles are duplicates ONLY if ALL of these are true:
+1. They solve the EXACT SAME user problem (not just the same general topic)
+2. They describe the SAME technical steps or resolution
+3. A user reading one article would get NO additional value from the other
+
+Two articles are NOT duplicates if:
+- They cover different topics (e.g., Wi-Fi vs printers, backups vs firewalls)
+- They solve different problems within the same domain
+- They describe different procedures, even if the domain is similar
+- They share a broad topic area but address different specific questions (e.g., two articles both about Einstein AI — one about setup, one about troubleshooting — are NOT duplicates; they would be retrieved for different customer queries)
+- One is a subset or extension of the other covering genuinely different ground
+
+There are only two anomaly types: Duplicate and Contradiction. There is no &quot;Overlap&quot; type — broad or partial topical similarity that does not meet the strict duplicate bar above is NOT an anomaly (return anomaly_type null, confidence_score 0). Single-article scoping/clarity problems are handled by other checks, not here.
+
+PRECEDENCE — if a pair is BOTH a near-duplicate AND contains contradictory facts (same problem, conflicting steps/values/answers), Contradiction ALWAYS wins: return anomaly_type &quot;Contradiction&quot;, never &quot;Duplicate&quot;. A contradiction must go to human review, not auto-merge.
+
+Article A Facts:
+{!$Input:ArticleA_State}
+
+Article B Facts:
+{!$Input:ArticleB_State}
+
+Return ONLY valid JSON, no markdown, no code blocks:
+- If NOT an anomaly: {&quot;is_duplicate&quot;: false, &quot;confidence_score&quot;: 0, &quot;anomaly_type&quot;: null, &quot;reasoning&quot;: &quot;...&quot;}
+- If duplicate (and NOT contradictory): {&quot;is_duplicate&quot;: true, &quot;confidence_score&quot;: 75-100, &quot;anomaly_type&quot;: &quot;Duplicate&quot;, &quot;reasoning&quot;: &quot;...&quot;}
+- If contradictory facts (even if also near-duplicate): {&quot;is_duplicate&quot;: false, &quot;confidence_score&quot;: 80-100, &quot;anomaly_type&quot;: &quot;Contradiction&quot;, &quot;reasoning&quot;: &quot;...&quot;}
+
+confidence_score means confidence in the anomaly_type ruling. For non-duplicates with no anomaly, ALWAYS return 0.
+</content>
+        <inputs>
+            <apiName>ArticleA_State</apiName>
+            <definition>primitive://String</definition>
+            <masterLabel>ArticleA_State</masterLabel>
+            <referenceName>Input:ArticleA_State</referenceName>
+            <required>true</required>
+        </inputs>
+        <inputs>
+            <apiName>ArticleB_State</apiName>
+            <definition>primitive://String</definition>
+            <masterLabel>ArticleB_State</masterLabel>
+            <referenceName>Input:ArticleB_State</referenceName>
+            <required>true</required>
+        </inputs>
+        <primaryModel>testTemp0_CM_12l_OKM89276f35</primaryModel>
+        <status>Published</status>
+        <versionIdentifier>dIRBZxdJBYVmvmwv4/3DkrD7prMYAANFTVuvFEZTzUI=_5</versionIdentifier>
+    </templateVersions>
+    <type>einstein_gpt__flex</type>
+    <visibility>Global</visibility>
+</GenAiPromptTemplate>

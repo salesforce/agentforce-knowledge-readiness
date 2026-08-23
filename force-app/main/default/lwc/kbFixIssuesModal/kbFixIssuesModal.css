@@ -1,0 +1,23 @@
+/* Recommendation row layout: fixed-width checkbox column on the left, content
+   takes the rest. Replaces the slds-grid 1-of-12 / 11-of-12 split which forced
+   the dimension badge to wrap when the modal was narrower than expected. */
+.kb-rec-row {
+    display: flex;
+    align-items: flex-start;
+}
+
+.kb-rec-check {
+    flex: 0 0 auto;
+    width: 1.5rem;
+    padding-top: 0.125rem;
+}
+
+.kb-rec-content {
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
+/* Keep badges from wrapping mid-word when they sit in a flex row. */
+.kb-badge-nowrap {
+    white-space: nowrap;
+}

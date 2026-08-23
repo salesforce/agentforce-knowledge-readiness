@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<LightningComponentBundle xmlns="http://soap.sforce.com/2006/04/metadata">
+    <apiVersion>66.0</apiVersion>
+    <isExposed>false</isExposed>
+    <masterLabel>KB Setup Permissions</masterLabel>
+    <description>Setup Step 1: explains the three shipped permission sets and surfaces the non-shipped platform prerequisite permissions (Data Cloud user, Prompt Template user). Explanatory only — assignment is done in Setup → Permission Sets.</description>
+</LightningComponentBundle>

@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Freshness_Threshold_Months__c</fullName>
+    <defaultValue>12</defaultValue>
+    <description>Articles older than this number of months will be penalized in freshness scoring.</description>
+    <externalId>false</externalId>
+    <inlineHelpText>Articles older than this threshold receive lower freshness scores. Default: 12 months.</inlineHelpText>
+    <label>Freshness Threshold (Months)</label>
+    <precision>3</precision>
+    <required>false</required>
+    <scale>0</scale>
+    <trackTrending>false</trackTrending>
+    <type>Number</type>
+    <unique>false</unique>
+</CustomField>

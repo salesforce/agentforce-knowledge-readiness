@@ -1,0 +1,188 @@
+<template>
+    <div class="slds-box slds-theme_default">
+        <!-- Header with actions -->
+        <div class="slds-grid slds-grid_align-spread slds-m-bottom_medium">
+ <!-- Highlights block: run name is the visual anchor so the
+                 user can tell which assessment they're looking at without going
+                 back. Status + description are supporting context. Only shown
+                 when a result is present; the bare "Assessment Results" heading
+                 covers the no-result state. -->
+            <div>
+                <template lwc:if={hasResult}>
+                    <p class="slds-text-title_caps slds-text-color_weak slds-m-bottom_xx-small">Assessment Results</p>
+                    <div class="slds-grid slds-grid_vertical-align-center slds-m-bottom_xx-small assessment-highlights-headline">
+                        <h2 class="slds-text-heading_medium slds-truncate" title={assessmentName}>{assessmentName}</h2>
+                        <template lwc:if={hasAssessmentStatus}>
+                            <lightning-badge label={assessmentStatus} class="slds-m-left_small"></lightning-badge>
+                        </template>
+                    </div>
+                    <p class="slds-text-body_small slds-text-color_weak">{assessmentDescription}</p>
+                </template>
+                <template lwc:if={noResult}>
+                    <h2 class="slds-text-heading_medium">Assessment Results</h2>
+                </template>
+            </div>
+            <div>
+ <!--: act on this run's recommendations in the Action Center.
+                     Replaces the old "New Assessment" button — from the results
+                     view the next step is to fix, not to start another run.
+                     Gated on a completed run (a Failed run has nothing to act on).
+ also disabled (with a tooltip) when every article in
+                     the run is unreachable — mirrors the per-card isUnreachable
+                     gate so the run-level deep-link can't dead-end. -->
+                <template lwc:if={isCompleted}>
+                    <lightning-button
+                        label="View Actions"
+                        icon-name="utility:forward"
+                        onclick={handleViewActions}
+                        disabled={viewActionsDisabled}
+                        title={viewActionsTooltip}
+                        class="slds-m-right_small view-actions-btn">
+                    </lightning-button>
+                </template>
+                <lightning-button
+                    variant="brand"
+                    label="Back"
+                    onclick={handleBack}>
+                </lightning-button>
+            </div>
+        </div>
+
+        <template lwc:if={hasResult}>
+            <!-- Run diagnostics panel — shown when run status is anything other than Completed -->
+            <template lwc:if={showErrorPanel}>
+                <div class="slds-box slds-theme_warning slds-m-bottom_medium">
+                    <div class="slds-grid slds-grid_align-spread slds-grid_vertical-align-center" onclick={toggleDiagPanel} onkeydown={handleDiagKeydown} role="button" tabindex="0" aria-expanded={isDiagExpandedStr}>
+                        <div class="slds-grid slds-grid_vertical-align-center">
+                            <lightning-icon icon-name={diagExpandedIcon} size="x-small" class="slds-m-right_x-small" aria-hidden="true"></lightning-icon>
+                            <lightning-icon icon-name="utility:warning" size="x-small" class="slds-m-right_small" aria-hidden="true"></lightning-icon>
+                            <span class="slds-text-heading_small">Run status: {diagStatus}</span>
+                        </div>
+                    </div>
+                    <template lwc:if={isDiagExpanded}>
+                        <div class="slds-m-top_small">
+                            <template lwc:if={hasFailures}>
+                                <p class="slds-text-body_small slds-m-bottom_x-small">
+                                    Recent async job failures during this run's time window:
+                                </p>
+                                <ul class="slds-has-dividers_bottom-space">
+                                    <template for:each={failureRows} for:item="row">
+                                        <li key={row.jobId} class="slds-item slds-p-vertical_x-small">
+                                            <div class="slds-text-title_bold">{row.className} · {row.status}</div>
+                                            <div class="slds-text-body_small slds-text-color_weak">{row.extendedStatus}</div>
+                                        </li>
+                                    </template>
+                                </ul>
+                                <lightning-button
+                                    label="Copy diagnostics"
+                                    variant="neutral"
+                                    icon-name="utility:copy"
+                                    onclick={handleCopyFailedArticleIds}
+                                    class="slds-m-top_small">
+                                </lightning-button>
+                            </template>
+                            <template lwc:else>
+                                <p class="slds-text-body_small slds-text-color_weak">
+                                    No recorded KB async failures in this run's time window. Check the Setup → Apex Jobs page for deeper history.
+                                </p>
+                            </template>
+                        </div>
+                    </template>
+                </div>
+            </template>
+
+ <!-- Summary Cards Row: three equal-height cells, left to right
+                 — run-details panel, distribution bar chart, score gauge. The grid
+                 columns stretch to the tallest card; each card carries height:100%
+                 to fill its column so all three line up flush. -->
+            <div class="slds-grid slds-gutters slds-wrap slds-m-bottom_large summary-cards-row">
+                <div class="slds-col slds-size_1-of-1 slds-medium-size_1-of-2 slds-large-size_1-of-3 slds-m-bottom_small">
+                    <c-kb-run-details-panel
+                        started-at={assessmentResult.startedAt}
+                        completed-at={assessmentResult.completedAt}>
+                    </c-kb-run-details-panel>
+                </div>
+                <div class="slds-col slds-size_1-of-1 slds-medium-size_1-of-2 slds-large-size_1-of-3 slds-m-bottom_small">
+                    <c-kb-score-distribution-chart
+                        ready-count={assessmentResult.readyCount}
+                        needs-work-count={assessmentResult.needsWorkCount}
+                        not-ready-count={assessmentResult.notReadyCount}>
+                    </c-kb-score-distribution-chart>
+                </div>
+                <div class="slds-col slds-size_1-of-1 slds-medium-size_1-of-2 slds-large-size_1-of-3 slds-m-bottom_small">
+                    <c-kb-overall-score-card
+                        score={assessmentResult.overallScore}
+                        total-articles={assessmentResult.totalArticles}>
+                    </c-kb-overall-score-card>
+                </div>
+            </div>
+
+            <!-- Tier badges + LLM mode -->
+            <template lwc:if={hasTiers}>
+                <div class="slds-m-bottom_large">
+                    <div class="tier-row">
+                        <template lwc:if={maturityTier}>
+                            <span class={maturityTierClass}>{maturityTier}</span>
+                        </template>
+                        <template lwc:if={deploymentTier}>
+                            <span class={deploymentTierClass}>Deployment: {deploymentTier}</span>
+                        </template>
+                        <span class="tier-badge tier-llm">{usedLLMLabel}</span>
+                    </div>
+                </div>
+            </template>
+
+            <!-- Dimension Overview -->
+            <template lwc:if={hasDimensionScores}>
+                <div class="slds-box slds-box_x-small slds-m-bottom_large dim-overview">
+                    <h3 class="slds-text-heading_small slds-m-bottom_medium">Dimension Scores</h3>
+                    <div class="slds-grid slds-wrap">
+                        <template for:each={dimensionRows} for:item="dim">
+                            <div key={dim.id} class="slds-col slds-size_1-of-1 slds-medium-size_1-of-2 slds-large-size_1-of-4 slds-m-bottom_small dim-row-col">
+                                <div class="dim-row">
+                                    <div class="dim-row-header">
+                                        <span class="dim-row-label">{dim.label}</span>
+                                        <span class={dim.scoreClass}>{dim.displayScore}</span>
+                                    </div>
+                                    <template lwc:if={dim.scored}>
+                                        <lightning-progress-bar value={dim.score} size="small" variant={dim.variant}></lightning-progress-bar>
+                                    </template>
+                                    <template lwc:else>
+                                        <p class="slds-text-body_small slds-text-color_weak">Not assessed in this run</p>
+                                    </template>
+                                </div>
+                            </div>
+                        </template>
+                    </div>
+                </div>
+            </template>
+
+            <!-- Article Cards -->
+            <h3 class="slds-text-heading_small slds-m-bottom_medium">Article Details</h3>
+
+            <template lwc:if={hasArticleResults}>
+                <template for:each={assessmentResult.articleResults} for:item="article">
+                    <c-kb-article-score-card
+                        key={article.articleId}
+                        article-result={article}
+                        onviewarticleactions={handleViewArticleActions}
+                        class="slds-m-bottom_small">
+                    </c-kb-article-score-card>
+                </template>
+            </template>
+
+            <template lwc:if={noArticleResults}>
+                <div class="slds-box slds-theme_shade">
+                    <p>No article details available.</p>
+                </div>
+            </template>
+        </template>
+
+        <template lwc:if={noResult}>
+            <div class="slds-illustration slds-illustration_small slds-text-align_center">
+                <h3 class="slds-text-heading_medium">No Results</h3>
+                <p>Assessment results are not available.</p>
+            </div>
+        </template>
+    </div>
+</template>

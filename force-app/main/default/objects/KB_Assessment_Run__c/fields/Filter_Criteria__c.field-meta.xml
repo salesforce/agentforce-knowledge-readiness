@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Filter_Criteria__c</fullName>
+    <description>JSON blob storing the filter selections applied to this assessment run.</description>
+    <externalId>false</externalId>
+    <inlineHelpText>Stores article filters and selection criteria as JSON.</inlineHelpText>
+    <label>Filter Criteria</label>
+    <length>32768</length>
+    <trackTrending>false</trackTrending>
+    <type>LongTextArea</type>
+    <visibleLines>3</visibleLines>
+</CustomField>

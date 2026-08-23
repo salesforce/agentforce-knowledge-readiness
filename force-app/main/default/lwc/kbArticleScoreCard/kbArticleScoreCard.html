@@ -1,0 +1,88 @@
+<template>
+    <div class={cardClass}>
+        <!-- Header (always visible) -->
+        <div class="card-header" onclick={toggleExpand} onkeydown={handleHeaderKeydown} role="button" tabindex="0" aria-expanded={isExpandedStr} aria-label={expandLabel}>
+            <div class="slds-grid slds-grid_align-spread slds-grid_vertical-align-center">
+                <div class="slds-grid slds-grid_vertical-align-center">
+                    <lightning-icon
+                        icon-name={expandIcon}
+                        size="x-small"
+                        class="slds-m-right_small expand-icon"
+                        aria-hidden="true">
+                    </lightning-icon>
+                    <div class="title-container">
+                        <h4 class="slds-text-heading_small">{articleResult.articleTitle}</h4>
+ <!--— only offer the open-article link when the
+                             article is still reachable; a deleted / access-lost
+                             article's link dead-ends, so show an "unavailable"
+                             marker instead. Title + score still render (snapshot). -->
+                        <template lwc:if={isReachable}>
+                            <a href={articleUrl} target="_blank" onclick={handleLinkClick} title="Open article in new tab" class="article-link" aria-label="Open article in new tab">
+                                <lightning-icon icon-name="utility:new_window" size="xx-small" aria-hidden="true"></lightning-icon>
+                            </a>
+                        </template>
+                        <template lwc:if={isUnreachable}>
+                            <lightning-icon icon-name="utility:ban" size="xx-small"
+                                class="slds-m-left_xx-small unreachable-icon"
+                                title="This article was deleted or you no longer have access to it"
+                                alternative-text="Article unavailable">
+                            </lightning-icon>
+                            <span class="slds-m-left_xx-small slds-text-body_small slds-text-color_weak">Unavailable</span>
+                        </template>
+                        <template lwc:if={articleResult.hasConflicts}>
+                            <lightning-badge label="Potential Conflicts" class="slds-m-top_xx-small conflict-badge"></lightning-badge>
+                        </template>
+                        <template lwc:if={hasSkipReason}>
+                            <lightning-badge label={skipReasonLabel} class="slds-m-top_xx-small skip-reason-badge" title={skipReasonTitle}></lightning-badge>
+                        </template>
+                    </div>
+                </div>
+                <div class="slds-grid slds-grid_vertical-align-center">
+                    <lightning-badge label={statusLabel} class={statusBadgeClass}></lightning-badge>
+                    <span class="score-display slds-m-left_small">{displayScore}</span>
+ <!--— per-article deep-link into the Action Center's Issues
+                         tab. — disabled (with an explanatory tooltip) only when
+                         the article is unreachable (deleted / access lost); an
+                         assessed-but-clean article still links through. -->
+                    <lightning-button
+                        label="View Actions"
+                        icon-name="utility:right"
+                        variant="neutral"
+                        class="slds-m-left_small view-actions-btn"
+                        disabled={viewActionsDisabled}
+                        title={viewActionsTooltip}
+                        onclick={handleViewActions}>
+                    </lightning-button>
+                </div>
+            </div>
+        </div>
+
+ <!-- Expanded content— diagnose-mode: per-dimension scores only.
+             Recommendations, the per-dimension reasoning accordion, conflict
+             detail and the "Why this score?" drill-in were removed; that depth
+             lives in the Action Center. The card stays a glanceable score view. -->
+        <template lwc:if={isExpanded}>
+            <div class="card-body">
+                <!-- Dimension scores grid -->
+                <div class="slds-grid slds-wrap slds-gutters_small">
+                    <template for:each={dimensions} for:item="dim">
+                        <div key={dim.key} class="slds-col slds-size_1-of-2 slds-medium-size_1-of-4 slds-large-size_1-of-4 slds-m-bottom_small">
+                            <div class="dimension-card">
+                                <div class="dimension-header">
+                                    <span class="dimension-label">
+                                        {dim.label}
+                                        <lightning-helptext content={dim.help}></lightning-helptext>
+                                    </span>
+                                    <span class="dimension-score">{dim.score}</span>
+                                </div>
+                                <template lwc:if={dim.scored}>
+                                    <lightning-progress-bar value={dim.progress} size="small" variant={dim.variant}></lightning-progress-bar>
+                                </template>
+                            </div>
+                        </div>
+                    </template>
+                </div>
+            </div>
+        </template>
+    </div>
+</template>

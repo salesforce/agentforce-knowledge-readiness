@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>AI_Bypass_Audit_Log__c</fullName>
+    <description>Stores a JSON log of bypassed AI consistency warnings including timestamp, user, and reason. Backs the "check &amp; publish" bypass flow on the Knowledge record page (KnowledgeAIGovernanceService). User-facing label is "KB Bypass Audit Log".</description>
+    <externalId>false</externalId>
+    <label>KB Bypass Audit Log</label>
+    <length>32768</length>
+    <type>LongTextArea</type>
+    <visibleLines>6</visibleLines>
+</CustomField>

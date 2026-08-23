@@ -1,0 +1,91 @@
+<template>
+    <template lwc:if={isLoading}>
+        <div class="slds-align_absolute-center slds-p-around_large">
+            <lightning-spinner alternative-text="Loading..."></lightning-spinner>
+        </div>
+    </template>
+
+    <template lwc:elseif={isSetupComplete}>
+        <!-- First-run coach — hides once any run exists -->
+        <c-kb-first-run-coach></c-kb-first-run-coach>
+
+ <!--: no icon-name/title on this card— the Action Center already has
+             its page label from the tab/FlexiPage. also dropped the
+             slot="actions" refresh button; with no title/icon/actions the card
+             renders no header row, removing the empty whitespace band. The refresh
+             control now sits inline next to the run filter (see below). -->
+        <lightning-card>
+            <div class="slds-p-around_medium">
+                <template lwc:if={showNoRunsZeroState}>
+                    <div class="slds-box slds-text-align_center slds-p-around_xx-large">
+                        <lightning-icon icon-name="standard:task2" size="large" class="slds-m-bottom_medium"></lightning-icon>
+                        <h2 class="slds-text-heading_medium slds-m-bottom_small">{emptyInboxTitle}</h2>
+                        <p class="slds-text-body_regular slds-text-color_weak slds-m-bottom_medium">
+                            {emptyInboxBody}
+                        </p>
+                        <lightning-button
+                            variant="brand"
+                            label={emptyInboxCta}
+                            icon-name="utility:play"
+                            onclick={handleNewAssessment}>
+                        </lightning-button>
+                    </div>
+                </template>
+                <template lwc:else>
+ <!--: run filter + refresh on one row. The refresh button
+                         moved here from the card header (which left an empty band);
+                         it sits after the filter, so it follows the dropdown rather
+                         than floating alone at the far right of a blank header. -->
+                    <div class="slds-m-bottom_medium run-filter-row">
+ <!--: searchable run filter (variant B). Selecting a
+                             run sets selectedRunId, which the sub-tab wires below
+                             react to via $selectedRunId — scoping all tabs. -->
+                        <c-kb-run-filter
+                            class="run-filter-grow"
+                            selected-run-id={selectedRunId}
+                            onrunselect={handleRunSelect}>
+                        </c-kb-run-filter>
+                        <lightning-button-icon
+                            class="slds-m-left_x-small"
+                            icon-name="utility:refresh"
+                            alternative-text="Refresh"
+                            title="Refresh"
+                            onclick={handleRefresh}
+                        ></lightning-button-icon>
+                    </div>
+                    <lightning-tabset active-tab-value={_activeTabValue}>
+                        <lightning-tab label={improvementsTabLabel} value="improvements">
+                            <c-kb-improvements-inbox
+                                run-id={selectedRunId}
+                                article-id={_deepLinkArticleId}
+                                rec-id={_deepLinkRecId}
+                                onimprovementscount={handleImprovementsCountChange}
+                                onfixapplied={handleFixApplied}
+                                onviewdrafts={handleViewDrafts}>
+                            </c-kb-improvements-inbox>
+                        </lightning-tab>
+                        <lightning-tab label={enrichmentTabLabel} value="enrichment">
+                            <c-kb-enrichment-inbox
+                                run-id={selectedRunId}
+                                oncountchange={handleEnrichmentCountChange}
+                            ></c-kb-enrichment-inbox>
+                        </lightning-tab>
+                        <lightning-tab label={duplicateTabLabel} value="duplicates">
+                            <c-knowledge-audit-queue
+                                run-id={selectedRunId}
+                                article-version-id={duplicatesDeepLinkArticleId}
+                                preselect-resolved={duplicatesPreselectResolved}
+                                hide-refresh
+                                oncountchange={handleDuplicateCountChange}
+                            ></c-knowledge-audit-queue>
+                        </lightning-tab>
+                    </lightning-tabset>
+                </template>
+            </div>
+        </lightning-card>
+    </template>
+
+    <template lwc:else>
+        <c-setup-required-guard ongotosetup={handleGoToSetup}></c-setup-required-guard>
+    </template>
+</template>

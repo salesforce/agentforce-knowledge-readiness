@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<PermissionSet xmlns="http://soap.sforce.com/2006/04/metadata">
+    <applicationVisibilities>
+        <application>KB_Readiness_Assessment</application>
+        <visible>true</visible>
+    </applicationVisibilities>
+    <classAccesses>
+        <apexClass>KBSetupOrchestratorController</apexClass>
+        <enabled>true</enabled>
+    </classAccesses>
+    <classAccesses>
+        <apexClass>KBSetupWizardController</apexClass>
+        <enabled>true</enabled>
+    </classAccesses>
+    <classAccesses>
+        <apexClass>KBKnowledgeFieldDescribeService</apexClass>
+        <enabled>true</enabled>
+    </classAccesses>
+    <description>Configures the app: Setup Wizard + scoring/pipeline/vector config only. No assessment, candidate, or pipeline data access. Assign alongside KB Assessment Manager to a user who both configures and runs the app.</description>
+    <label>KB Assessment Setup Admin</label>
+    <objectPermissions>
+        <allowCreate>false</allowCreate>
+        <allowDelete>false</allowDelete>
+        <allowEdit>false</allowEdit>
+        <allowRead>true</allowRead>
+        <modifyAllRecords>false</modifyAllRecords>
+        <object>Knowledge__kav</object>
+        <viewAllFields>false</viewAllFields>
+        <viewAllRecords>false</viewAllRecords>
+    </objectPermissions>
+    <tabSettings>
+        <tab>KB_Assessment_Setup</tab>
+        <visibility>Visible</visibility>
+    </tabSettings>
+</PermissionSet>

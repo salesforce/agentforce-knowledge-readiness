@@ -1,0 +1,152 @@
+:host {
+    display: block;
+}
+
+.article-card {
+    background: white;
+    border-left: 4px solid #706e6b;
+    transition: box-shadow 0.2s ease;
+}
+
+.article-card:hover {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.card-ready {
+    border-left-color: #2e844a;
+}
+
+.card-needs-work {
+ /* accent border (graphic)— bright amber, distinct from the red not-ready card. */
+    border-left-color: #fe9339;
+}
+
+.card-not-ready {
+    border-left-color: #c23934;
+}
+
+/* the assessed article can't be opened (deleted, or access lost). Grey
+   the whole card and mute the left accent so it visibly reads as inert, while
+   the snapshot title/score stay legible. */
+.card-unreachable {
+    opacity: 0.6;
+    border-left-color: #c9c9c9;
+    background-color: #fafafa;
+}
+
+.unreachable-icon {
+    --slds-c-icon-color-foreground-default: #706e6b;
+}
+
+.card-header {
+    cursor: pointer;
+    padding: 0.5rem 0;
+}
+
+/* the header is now a keyboard-focusable role="button"— give it a
+   visible focus indicator. :focus-visible so a mouse click doesn't paint it. */
+.card-header:focus-visible {
+    outline: 2px solid #0176d3;
+    outline-offset: -2px;
+    border-radius: 2px;
+}
+
+.expand-icon {
+    color: #706e6b;
+}
+
+.score-display {
+    font-size: 1.5rem;
+    font-weight: bold;
+    min-width: 50px;
+    text-align: right;
+}
+
+.status-badge {
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    font-weight: bold;
+}
+
+.badge-ready {
+    background: #e6f4ea;
+    color: #2e844a;
+}
+
+.badge-needs-work {
+    /* Text on cream (can't be dark-on-amber) — #8c4b02 clears 4.5:1 and reads amber, not red. */
+    background: #fef3e0;
+    color: #8c4b02;
+}
+
+.badge-not-ready {
+    background: #fce4e4;
+    color: #c23934;
+}
+
+.conflict-badge {
+    background: #fef3e0;
+    color: #8c4b02;
+}
+
+.skip-reason-badge {
+    background: #eef1f6;
+    color: #444;
+}
+
+.card-body {
+    padding-top: 1rem;
+    border-top: 1px solid #e0e5ee;
+    margin-top: 0.5rem;
+}
+
+.dimension-card {
+    background: #f3f3f3;
+    padding: 0.75rem;
+    border-radius: 4px;
+}
+
+.dimension-header {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 0.5rem;
+}
+
+.dimension-label {
+    font-size: 0.75rem;
+    color: #706e6b;
+}
+
+.dimension-score {
+    font-weight: bold;
+    font-size: 0.875rem;
+}
+
+lightning-progress-bar {
+    --slds-c-progressbar-color-background: #e0e5ee;
+}
+
+/* Article link styles */
+.title-container {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.article-link {
+    display: inline-flex;
+    align-items: center;
+    color: #0176d3;
+    opacity: 0.6;
+    transition: opacity 0.15s ease;
+}
+
+.article-link:hover {
+    opacity: 1;
+}
+
+.card-header:hover .article-link {
+    opacity: 0.8;
+}

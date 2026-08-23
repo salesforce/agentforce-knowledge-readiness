@@ -1,0 +1,148 @@
+<template>
+    <lightning-modal-header label="Review related candidates before merging"></lightning-modal-header>
+    <lightning-modal-body>
+        <div class="slds-p-around_medium">
+                <!-- Seed pair summary -->
+                <div class="slds-box slds-theme_shade slds-m-bottom_medium">
+                    <p class="slds-text-title_caps slds-m-bottom_x-small">Selected pair</p>
+                    <p class="slds-text-body_regular">
+                        <strong>A:</strong> {seedArticle1Title}
+                        <template lwc:if={seedArticle1Number}>
+                            <span class="slds-text-color_weak"> ({seedArticle1Number})</span>
+                        </template>
+                    </p>
+                    <p class="slds-text-body_regular">
+                        <strong>B:</strong> {seedArticle2Title}
+                        <template lwc:if={seedArticle2Number}>
+                            <span class="slds-text-color_weak"> ({seedArticle2Number})</span>
+                        </template>
+                    </p>
+                </div>
+
+                <p class="slds-text-body_regular slds-m-bottom_small">
+                    Other pending candidates involving these articles. Tick any you want to merge into the same golden record.
+                </p>
+
+                <template lwc:if={isLoading}>
+                    <div class="slds-is-relative" style="min-height: 80px;">
+                        <lightning-spinner size="small" alternative-text="Loading neighbors"></lightning-spinner>
+                    </div>
+                </template>
+
+                <template lwc:if={error}>
+                    <div class="slds-notify slds-notify_alert slds-alert_error" role="alert">
+                        <p>{error}</p>
+                    </div>
+                </template>
+
+                <template lwc:if={noNeighbors}>
+                    <div class="slds-box slds-theme_default slds-text-align_center">
+                        <p class="slds-text-body_regular">No other pending candidates involve these articles.</p>
+                    </div>
+                </template>
+
+                <template lwc:if={hasNeighbors}>
+                    <ul class="slds-has-dividers_bottom-space">
+                        <template for:each={neighbors} for:item="n">
+                            <li key={n.candidateId} class={n.rowClass}>
+                                <div class="slds-grid slds-grid_align-spread slds-grid_vertical-align-center slds-p-vertical_x-small">
+                                    <div class="slds-col">
+                                        <label class="slds-checkbox">
+                                            <input
+                                                type="checkbox"
+                                                data-id={n.candidateId}
+                                                checked={n.isSelected}
+                                                onchange={handleToggle}
+                                            />
+                                            <span class="slds-checkbox_faux"></span>
+                                            <span class="slds-form-element__label">
+                                                <strong>{n.article1Title}</strong>
+                                                <span class="slds-text-color_weak"> ({n.article1Number})</span>
+                                                <span class="slds-m-horizontal_xx-small">↔</span>
+                                                <strong>{n.article2Title}</strong>
+                                                <span class="slds-text-color_weak"> ({n.article2Number})</span>
+                                            </span>
+                                        </label>
+                                    </div>
+                                    <div class="slds-col slds-shrink-none slds-text-align_right">
+                                        <lightning-badge label={n.hopLabel} class="slds-m-right_x-small"></lightning-badge>
+                                        <lightning-badge label={n.flagType} class="slds-m-right_x-small"></lightning-badge>
+                                        <span class="slds-text-title">Score: {n.scoreRounded}</span>
+                                    </div>
+                                </div>
+                                <template lwc:if={n.reasoning}>
+                                    <p class="slds-text-body_small slds-text-color_weak slds-p-left_large">{n.reasoning}</p>
+                                </template>
+                            </li>
+                        </template>
+                    </ul>
+                </template>
+
+                <template lwc:if={canExpandFurther}>
+                    <div class="slds-m-top_small slds-text-align_center">
+                        <lightning-button
+                            variant="base"
+                            icon-name="utility:expand"
+                            label={expandLabel}
+                            onclick={handleExpand}
+                            disabled={isLoading}
+                        ></lightning-button>
+                    </div>
+                </template>
+
+ <!-- keep-choice: create a new merged article, or keep one of
+                     the existing articles enriched with the others (the others
+                     are archived once the survivor is published). -->
+                <div class="slds-box slds-m-top_medium">
+                    <lightning-radio-group
+                        name="keepChoice"
+                        label="What should the merge produce?"
+                        options={keepChoiceOptions}
+                        value={keepChoice}
+                        type="radio"
+                        onchange={handleKeepChoiceChange}
+                    ></lightning-radio-group>
+
+                    <template lwc:if={isKeepSurvivor}>
+                        <p class="slds-text-body_small slds-text-color_weak slds-m-vertical_x-small">
+                            Choose the article to keep. It will be re-versioned with the
+                            merged content; the others are archived when you publish it.
+                        </p>
+                        <ul class="slds-has-dividers_bottom-space">
+                            <template for:each={survivorOptions} for:item="s">
+                                <li key={s.id} class={s.rowClass}>
+                                    <label class="slds-radio">
+                                        <input
+                                            type="radio"
+                                            name="survivor"
+                                            data-id={s.id}
+                                            checked={s.selected}
+                                            onchange={handleSurvivorPick}
+                                        />
+                                        <span class="slds-radio_faux"></span>
+                                        <span class="slds-form-element__label">{s.label}</span>
+                                    </label>
+                                </li>
+                            </template>
+                        </ul>
+                    </template>
+                </div>
+        </div>
+    </lightning-modal-body>
+    <lightning-modal-footer>
+        <lightning-button label="Cancel" onclick={handleCancel} class="slds-m-right_x-small"></lightning-button>
+        <lightning-button
+            label="Merge Pair Only"
+            variant="neutral"
+            onclick={handleMergePairOnly}
+            disabled={pairOnlyDisabled}
+            class="slds-m-right_x-small"
+        ></lightning-button>
+        <lightning-button
+            label={clusterButtonLabel}
+            variant="success"
+            onclick={handleMergeCluster}
+            disabled={clusterMergeDisabled}
+        ></lightning-button>
+    </lightning-modal-footer>
+</template>

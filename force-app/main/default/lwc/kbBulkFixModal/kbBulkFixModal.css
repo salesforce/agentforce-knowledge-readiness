@@ -1,0 +1,11 @@
+/* Medium modal width constraint */
+.modal-medium {
+    max-width: 40rem;
+}
+
+/* Prevent button label wrapping in footer */
+.footer-nowrap {
+    display: flex;
+    flex-wrap: nowrap;
+    gap: 0.5rem;
+}

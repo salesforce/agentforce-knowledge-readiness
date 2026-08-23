@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomApplication xmlns="http://soap.sforce.com/2006/04/metadata">
+    <description>Assess Knowledge Base articles for Agentforce readiness</description>
+    <formFactors>Large</formFactors>
+    <isNavAutoTempTabsDisabled>false</isNavAutoTempTabsDisabled>
+    <isNavPersonalizationDisabled>true</isNavPersonalizationDisabled>
+    <isNavTabPersistenceDisabled>false</isNavTabPersistenceDisabled>
+    <isOmniPinnedViewEnabled>false</isOmniPinnedViewEnabled>
+    <label>Knowledge Readiness</label>
+    <navType>Standard</navType>
+    <tabs>Knowledge__kav</tabs>
+    <tabs>KB_Assessment_Console</tabs>
+    <tabs>KB_Candidate_Inbox</tabs>
+    <tabs>KB_Pipeline_Operations</tabs>
+    <tabs>KB_Assessment_Setup</tabs>
+    <uiType>Lightning</uiType>
+</CustomApplication>

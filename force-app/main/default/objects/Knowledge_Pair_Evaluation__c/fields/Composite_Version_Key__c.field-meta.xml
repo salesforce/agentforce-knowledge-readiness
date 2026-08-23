@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Composite_Version_Key__c</fullName>
+    <description>Alphabetically sorted pair of KnowledgeArticleVersionIds joined by underscore. Used as a unique lookup key.</description>
+    <caseSensitive>true</caseSensitive>
+    <externalId>true</externalId>
+    <label>Composite Version Key</label>
+    <length>255</length>
+    <required>true</required>
+    <type>Text</type>
+    <unique>true</unique>
+</CustomField>

@@ -1,0 +1,26 @@
+.check-row {
+    align-items: flex-start;
+}
+
+.check-icon_success {
+    --slds-c-icon-color-foreground-default: #2e844a;
+}
+
+.check-icon_error {
+    --slds-c-icon-color-foreground-default: #ba0517;
+}
+
+.check-icon_warning {
+ /* status icon on white needs 3:1 (1.4.11)— #8c4b02 passes and reads amber. */
+    --slds-c-icon-color-foreground-default: #8c4b02;
+}
+
+.limit-row {
+    padding-top: 0.25rem;
+}
+
+.bundle-textarea textarea {
+    font-family: 'Consolas', 'Menlo', monospace;
+    font-size: 0.75rem;
+    min-height: 12rem;
+}

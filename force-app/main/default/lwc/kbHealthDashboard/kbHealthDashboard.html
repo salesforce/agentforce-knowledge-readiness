@@ -1,0 +1,224 @@
+<template>
+    <template lwc:if={isSetupCheckPending}>
+        <lightning-spinner alternative-text="Loading..." size="small"></lightning-spinner>
+    </template>
+    <template lwc:if={isSetupComplete}>
+    <!-- First-run coach — self-hides when setup incomplete, runs exist, or user dismissed -->
+    <c-kb-first-run-coach></c-kb-first-run-coach>
+
+    <!-- Loading -->
+    <template lwc:if={isLoading}>
+        <lightning-spinner alternative-text="Loading dashboard..." size="medium"></lightning-spinner>
+    </template>
+
+    <!-- Error -->
+    <template lwc:if={error}>
+        <div class="slds-notify slds-notify_alert slds-alert_error" role="alert">
+            <span class="slds-assistive-text">error</span>
+            <h2>{error}</h2>
+        </div>
+    </template>
+
+    <!-- Config Banner -->
+    <template lwc:if={showConfigBanner}>
+        <div class="config-banner slds-m-bottom_medium">
+            <lightning-icon icon-name="utility:info" size="x-small" class="slds-m-right_x-small" aria-hidden="true"></lightning-icon>
+            Using default settings &mdash;
+            <button type="button" class="slds-button slds-button_reset slds-text-link" onclick={handleGoToSetup}>customise in Setup</button>
+        </div>
+    </template>
+
+    <!-- Empty State -->
+    <template lwc:if={showEmptyState}>
+        <div class="empty-state slds-box slds-theme_default slds-text-align_center slds-p-around_xx-large">
+            <h1 class="slds-text-heading_large slds-m-bottom_small">Readiness Assessment</h1>
+            <p class="slds-text-body_regular slds-m-bottom_medium">
+                Evaluate your Knowledge Base health across 6 dimensions before Agentforce go-live.
+                Get a readiness score, identify Quick Wins, and see actionable recommendations.
+            </p>
+            <p class="slds-text-body_small slds-text-color_weak slds-m-bottom_large">
+                Total published articles: <strong>{totalPublishedArticles}</strong>
+            </p>
+            <lightning-button
+                variant="brand"
+                label="Run Your First Scan"
+                icon-name="utility:play"
+                onclick={handleStartAssessment}>
+            </lightning-button>
+        </div>
+    </template>
+
+    <!-- KB Health Dashboard -->
+    <template lwc:if={hasCompletedRun}>
+        <div class="dashboard-container">
+
+            <!-- Row 1: KPIs -->
+            <div class="slds-grid slds-wrap slds-gutters_small slds-m-bottom_medium">
+                <div class="slds-col slds-size_1-of-2 slds-medium-size_1-of-4">
+                    <div class="kpi-card slds-box slds-text-align_center">
+                        <div class="kpi-label">Published Articles</div>
+                        <div class="kpi-value">{totalPublishedArticles}</div>
+                    </div>
+                </div>
+                <div class="slds-col slds-size_1-of-2 slds-medium-size_1-of-4">
+                    <div class="kpi-card slds-box slds-text-align_center">
+                        <div class="kpi-label">Coverage</div>
+                        <div class="kpi-value kpi-value--highlight">{coveragePct}%</div>
+                        <div class="kpi-sub">{totalAssessedArticles} ever assessed</div>
+                    </div>
+                </div>
+                <div class="slds-col slds-size_1-of-2 slds-medium-size_1-of-4">
+                    <div class="kpi-card slds-box slds-text-align_center">
+                        <div class="kpi-label">Pending Duplicates</div>
+                        <div class={pendingDuplicatesClass}>{pendingDuplicates}</div>
+                        <template lwc:if={hasPendingActions}>
+                            <button type="button" class="slds-button slds-button_reset kpi-action" onclick={handleGoToOperations}>Review</button>
+                        </template>
+                    </div>
+                </div>
+                <div class="slds-col slds-size_1-of-2 slds-medium-size_1-of-4">
+                    <div class="kpi-card slds-box slds-text-align_center">
+                        <div class="kpi-label">Pending Enrichments</div>
+                        <div class={pendingEnrichmentsClass}>{pendingEnrichments}</div>
+                        <template lwc:if={hasPendingActions}>
+                            <button type="button" class="slds-button slds-button_reset kpi-action" onclick={handleGoToOperations}>Review</button>
+                        </template>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Row 2: Latest Score + Dimension Trends -->
+            <div class="slds-grid slds-wrap slds-gutters_small slds-m-bottom_medium">
+
+                <!-- Latest Score -->
+                <div class="slds-col slds-size_1-of-1 slds-medium-size_1-of-3">
+                    <div class="slds-box score-panel slds-text-align_center slds-p-around_medium">
+                        <div class="slds-text-title_caps slds-m-bottom_small">Latest Assessment</div>
+                        <c-kb-score-gauge score={latestScore} label="Overall" size="large"></c-kb-score-gauge>
+                        <div class="slds-m-top_small slds-text-body_small slds-text-color_weak">{lastScanDate}</div>
+                        <div class="slds-m-top_xx-small slds-text-body_small slds-text-color_weak">{latestScopeLabel}</div>
+                        <template lwc:if={latestComparabilityWarning}>
+                            <div class="compat-warning slds-m-top_small">
+                                <lightning-icon icon-name="utility:warning" size="xx-small" class="slds-m-right_xx-small" aria-hidden="true"></lightning-icon>
+                                {latestComparabilityWarning}
+                            </div>
+                        </template>
+                    </div>
+                </div>
+
+                <!-- Dimension Trends -->
+                <div class="slds-col slds-size_1-of-1 slds-medium-size_2-of-3">
+                    <div class="slds-box slds-p-around_medium">
+                        <div class="slds-grid slds-grid_align-spread slds-m-bottom_small">
+                            <span class="slds-text-title_caps">Dimension Health</span>
+                            <span class="slds-text-body_small slds-text-color_weak">avg across all runs</span>
+                        </div>
+                        <template for:each={dimensionTrendRows} for:item="dim">
+                            <div key={dim.dimension} class="dim-trend-row slds-m-bottom_x-small">
+                                <div class="slds-grid slds-grid_vertical-align-center">
+                                    <div class="dim-trend-label slds-col">
+                                        <span>{dim.dimension}</span>
+                                        <template lwc:if={dim.isPersistentWeakSpot}>
+                                            <lightning-icon icon-name="utility:warning" size="xx-small" class="weak-spot-icon slds-m-left_xx-small" aria-hidden="true"></lightning-icon>
+                                        </template>
+                                    </div>
+                                    <div class="slds-col slds-grow slds-m-horizontal_small">
+                                        <lightning-progress-bar value={dim.avgProgressValue} variant={dim.variant} size="small"></lightning-progress-bar>
+                                    </div>
+                                    <div class="dim-trend-scores">
+                                        <span class={dim.latestScoreClass}>{dim.latestScore}</span>
+                                        <span class="slds-text-color_weak slds-m-left_x-small">avg {dim.averageScore}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </template>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Row 3: Run History -->
+            <div class="slds-box slds-m-bottom_medium">
+                <div class="slds-grid slds-grid_align-spread slds-m-bottom_small">
+                    <span class="slds-text-title_caps">Run History</span>
+                    <lightning-button
+                        variant="base"
+                        label="View All in Console"
+                        icon-name="utility:right"
+                        icon-position="right"
+                        onclick={handleStartAssessment}>
+                    </lightning-button>
+                </div>
+                <template for:each={runHistoryRows} for:item="run">
+                    <div key={run.runId} class="run-row slds-grid slds-grid_vertical-align-center slds-p-around_x-small slds-border_bottom">
+                        <div class="slds-col slds-size_3-of-12">
+                            <div class="slds-text-body_small slds-text-color_weak">{run.completedAtFormatted}</div>
+                        </div>
+                        <div class="slds-col slds-size_2-of-12 slds-text-align_center">
+                            <span class={run.scoreClass}>{run.overallScore}</span>
+                        </div>
+                        <div class="slds-col slds-size_2-of-12 slds-text-align_center">
+                            <span class="slds-text-body_small">{run.totalArticles} articles</span>
+                        </div>
+                        <div class="slds-col slds-size_2-of-12 slds-text-align_center">
+                            <lightning-badge label={run.scopeLabel}></lightning-badge>
+                        </div>
+                        <div class="slds-col slds-size_2-of-12 slds-text-align_center">
+                            <template lwc:if={run.comparableToPrevious}>
+                                <lightning-icon icon-name="utility:check" size="xx-small" class="compat-ok-icon" aria-hidden="true"></lightning-icon>
+                            </template>
+                            <template lwc:else>
+                                <span class="compat-warning-chip slds-grid slds-grid_vertical-align-center slds-grid_align-center">
+                                    <span>⚠ {run.incompatibilityHeadline}</span>
+                                    <lightning-helptext content={run.incompatibilityDetail} class="slds-m-left_xx-small"></lightning-helptext>
+                                </span>
+                            </template>
+                        </div>
+                        <div class="slds-col slds-size_1-of-12 slds-text-align_right">
+                            <template lwc:if={run.usedLLM}>
+                                <lightning-badge label="AI"></lightning-badge>
+                            </template>
+                        </div>
+                    </div>
+                </template>
+                <template lwc:if={hasNextScheduledRun}>
+                    <div class="slds-m-top_small slds-text-body_small slds-text-color_weak">
+                        <lightning-icon icon-name="utility:clock" size="xx-small" class="slds-m-right_xx-small" aria-hidden="true"></lightning-icon>
+                        Next scheduled: {nextScheduledRun}
+                    </div>
+                </template>
+            </div>
+
+            <!-- Actions -->
+            <div class="slds-grid slds-gutters_small slds-m-top_medium">
+                <div class="slds-col slds-shrink">
+                    <lightning-button
+                        variant="brand"
+                        label="Start New Assessment"
+                        icon-name="utility:play"
+                        onclick={handleStartAssessment}>
+                    </lightning-button>
+                </div>
+                <div class="slds-col slds-shrink">
+                    <lightning-button
+                        variant="neutral"
+                        label="Operations"
+                        icon-name="utility:settings"
+                        onclick={handleGoToOperations}>
+                    </lightning-button>
+                </div>
+                <div class="slds-col slds-shrink">
+                    <lightning-button
+                        variant="neutral"
+                        label="Setup"
+                        icon-name="utility:setup"
+                        onclick={handleGoToSetup}>
+                    </lightning-button>
+                </div>
+            </div>
+        </div>
+    </template>
+    </template>
+    <template lwc:if={isSetupIncomplete}>
+        <c-setup-required-guard ongotosetup={handleGoToSetup}></c-setup-required-guard>
+    </template>
+</template>

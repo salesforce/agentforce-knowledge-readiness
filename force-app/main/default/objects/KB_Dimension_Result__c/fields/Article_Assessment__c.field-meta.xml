@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Article_Assessment__c</fullName>
+    <description>Parent article assessment. Master-detail — child rows are cascade-deleted with the parent by default.</description>
+    <externalId>false</externalId>
+    <label>Article Assessment</label>
+    <referenceTo>KB_Article_Assessment__c</referenceTo>
+    <relationshipLabel>Dimension Results</relationshipLabel>
+    <relationshipName>Dimension_Results</relationshipName>
+    <relationshipOrder>0</relationshipOrder>
+    <reparentableMasterDetail>false</reparentableMasterDetail>
+    <trackTrending>false</trackTrending>
+    <type>MasterDetail</type>
+    <writeRequiresMasterRead>false</writeRequiresMasterRead>
+</CustomField>

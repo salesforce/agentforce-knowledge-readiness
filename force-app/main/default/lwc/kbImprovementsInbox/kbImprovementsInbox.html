@@ -1,0 +1,382 @@
+<template>
+    <div class="slds-var-p-around_medium">
+
+        <template lwc:if={isLoading}>
+            <div class="slds-align_absolute-center slds-var-p-around_large">
+                <lightning-spinner alternative-text="Loading improvements..." size="medium"></lightning-spinner>
+            </div>
+        </template>
+
+        <template lwc:if={error}>
+            <div class="slds-notify slds-notify_alert slds-alert_error" role="alert">
+                <span class="slds-assistive-text">Error</span>
+                {error}
+            </div>
+        </template>
+
+        <!-- Bulk running banner -->
+        <template lwc:if={isBulkRunning}>
+            <div class="slds-notify slds-notify_alert slds-theme_info slds-var-m-bottom_small" role="status">
+                <lightning-spinner size="x-small" alternative-text="Processing"
+                                   class="slds-var-m-right_x-small"></lightning-spinner>
+                {bulkRunningLabel}
+            </div>
+        </template>
+
+ <!--: bulk-fix complete banner with a one-click path to the drafts
+             just created (the Suggested Article Drafts tab, already scoped to this run). -->
+        <template lwc:if={showBulkComplete}>
+            <div class="slds-notify slds-notify_alert slds-theme_success slds-var-m-bottom_small
+                        slds-grid slds-grid_vertical-align-center" role="status">
+                <lightning-icon icon-name="utility:success" size="x-small" variant="inverse"
+                                class="slds-var-m-right_x-small"></lightning-icon>
+                <span class="slds-col">Bulk fix complete — your drafts are ready to review.</span>
+                <lightning-button
+                    label="View Drafts"
+                    variant="brand"
+                    icon-name="utility:file"
+                    class="slds-var-m-left_small"
+                    onclick={handleViewDrafts}>
+                </lightning-button>
+                <lightning-button-icon
+                    icon-name="utility:close"
+                    variant="bare-inverse"
+                    alternative-text="Dismiss"
+                    class="slds-var-m-left_x-small"
+                    onclick={handleDismissBulkComplete}>
+                </lightning-button-icon>
+            </div>
+        </template>
+
+        <!-- Filters + controls always visible once loading is done -->
+        <template lwc:if={showControls}>
+
+            <!-- Filters row -->
+            <div class="slds-grid slds-gutters slds-var-m-bottom_medium slds-wrap">
+                <div class="slds-col slds-size_1-of-2 slds-medium-size_1-of-4">
+ <!-- review (blocker 3): frozen during a bulk run so the
+                         dispatched scope can't drift under a live wire re-query. -->
+                    <lightning-combobox
+                        label="Dimension"
+                        value={dimensionFilter}
+                        options={dimensionOptions}
+                        disabled={isFilterFrozen}
+                        onchange={handleDimensionChange}>
+                    </lightning-combobox>
+                </div>
+                <div class="slds-col slds-size_1-of-2 slds-medium-size_1-of-4">
+                    <lightning-combobox
+                        label="Sort by"
+                        value={sortBy}
+                        options={sortOptions}
+                        onchange={handleSortChange}>
+                    </lightning-combobox>
+                </div>
+                <div class="slds-col slds-size_1-of-2 slds-medium-size_1-of-4 slds-align-bottom">
+                    <lightning-button
+                        label="Clear Filters"
+                        onclick={handleClearFilters}
+                        disabled={isFilterFrozen}
+                        class="slds-var-m-top_small">
+                    </lightning-button>
+                </div>
+                <div class="slds-col slds-medium-size_1-of-4 slds-text-align_right slds-align-bottom">
+ <!--— real totals: X–Y of N (the true article count), not
+                         the page size, so scope is patently obvious. -->
+                    <span class="slds-text-body_small slds-text-color_weak">
+                        {pageSummary}
+                    </span>
+                </div>
+            </div>
+
+ <!-- Select controls (left, aligned with per-row checkboxes—) +
+                 Expand / Collapse. Select All / Deselect All only render with
+                 more than one article; a single group is actioned directly. -->
+            <div class="slds-grid slds-grid_vertical-align-center slds-var-m-bottom_x-small">
+                <div class="slds-col">
+                    <template lwc:if={isMultiSelect}>
+ <!--— "Select page" ticks the visible page; the
+                             banner below offers "select all N" across pages. -->
+                        <button class="slds-button slds-button_reset slds-text-link slds-var-m-right_small"
+                                onclick={handleSelectAll}>
+                            Select page
+                        </button>
+                        <button class="slds-button slds-button_reset slds-text-link"
+                                onclick={handleDeselectAll}>
+                            Deselect All
+                        </button>
+                    </template>
+                </div>
+                <div class="slds-col slds-text-align_right">
+                    <lightning-button-group>
+                        <lightning-button
+                            label="Expand All"
+                            icon-name="utility:expand_all"
+                            onclick={handleExpandAll}>
+                        </lightning-button>
+                        <lightning-button
+                            label="Collapse All"
+                            icon-name="utility:collapse_all"
+                            onclick={handleCollapseAll}>
+                        </lightning-button>
+                    </lightning-button-group>
+                </div>
+            </div>
+
+ <!--— genuine "select all N matching" banner: only shown when the
+                 total exceeds the visible page, so the user can distinguish the
+                 page from the whole set (per the 2026-07-15 design decision). -->
+            <template lwc:if={canSelectAllMatching}>
+                <div class="slds-notify slds-notify_alert slds-theme_info slds-var-m-bottom_small"
+                     role="status">
+                    <template lwc:if={_selectAllMatching}>
+                        All <strong>{totalArticles}</strong> matching article(s) are selected.
+                        <button class="slds-button slds-button_reset slds-text-link slds-var-m-left_x-small"
+                                onclick={handleDeselectAll}>Clear selection</button>
+                    </template>
+                    <template lwc:else>
+                        <button class="slds-button slds-button_reset slds-text-link"
+                                onclick={handleSelectAllMatching}>{selectAllMatchingLabel}</button>
+                        (not just the {pageArticleCount} on this page).
+                    </template>
+                </div>
+            </template>
+
+ <!-- review (blocker 1): the matching set is larger than the SOQL
+                 OFFSET window can page, so "select all N" is withheld (a whole-set
+                 dispatch would silently truncate). Direct the user to narrow the
+                 scope instead. -->
+            <template lwc:if={selectAllTooLarge}>
+                <div class="slds-notify slds-notify_alert slds-theme_warning slds-var-m-bottom_small"
+                     role="status">
+                    {selectAllTooLargeLabel}
+                </div>
+            </template>
+
+            <!-- Bulk action bar (visible when articles are selected) -->
+            <template lwc:if={hasSelection}>
+                <div class="slds-grid slds-grid_vertical-align-center slds-var-m-bottom_small
+                            slds-box slds-box_x-small slds-theme_shade kb-action-bar">
+                    <div class="slds-col">
+                        <template lwc:if={_selectAllMatching}>
+                            <span class="slds-text-body_small slds-text-color_weak">
+                                <strong>{totalArticles}</strong> article(s) selected (all matching)
+                            </span>
+                        </template>
+                        <template lwc:else>
+                            <span class="slds-text-body_small slds-text-color_weak">
+                                <strong>{selectionCount}</strong> article(s) selected
+                            </span>
+                        </template>
+                    </div>
+                    <div class="slds-col slds-text-align_right">
+                        <lightning-button-group>
+                            <lightning-button
+                                label="Fix Selected"
+                                variant="brand"
+                                icon-name="utility:magicwand"
+                                onclick={handleFixSelected}
+                                disabled={isFixDisabled}>
+                            </lightning-button>
+                            <lightning-button
+                                label="Dismiss Selected"
+                                variant="neutral"
+                                icon-name="utility:close"
+                                onclick={handleDismissSelected}>
+                            </lightning-button>
+                        </lightning-button-group>
+                    </div>
+                </div>
+            </template>
+
+            <!-- Fix All button always visible (no selection required) -->
+            <template lwc:if={showEmpty}>
+                <div class="slds-text-align_center slds-var-p-vertical_xx-large">
+                    <lightning-icon icon-name="utility:filter" size="large"
+                        class="kb-icon-muted">
+                    </lightning-icon>
+                    <h3 class="slds-text-heading_small slds-var-m-top_medium">No matching improvements</h3>
+                    <p class="slds-text-color_weak slds-var-m-top_x-small">
+                        Try clearing some filters to see more results.
+                    </p>
+                </div>
+            </template>
+
+            <template lwc:else>
+
+ <!--— no standalone "Fix All": fixing is always an explicit
+                     selection (tick articles or "select all N"), then Fix Selected. -->
+
+                <!-- Accordion: one section per article, collapsed by default.
+                     Each section is wrapped in a flex row so the article
+                     checkbox can sit at the FAR LEFT, before the section's
+                     disclosure chevron — lightning-accordion-section
+                     only exposes a right-side `actions` slot, so the checkbox
+                     cannot live inside the header itself. -->
+                <lightning-accordion allow-multiple-sections-open active-section-name={activeSections}>
+                    <template for:each={filteredGroups} for:item="group">
+                        <div key={group.articleId} class="slds-grid slds-grid_vertical-align-start kb-section-row">
+
+                            <!-- Left checkbox column — only when multi-select
+                                 makes sense (>1 article); a single group is
+                                 actioned directly via its own buttons. -->
+                            <template lwc:if={isMultiSelect}>
+                                <div class="kb-section-checkbox slds-var-m-right_x-small">
+                                    <lightning-input
+                                        type="checkbox"
+                                        label="Select article"
+                                        variant="label-hidden"
+                                        checked={group.isSelected}
+                                        data-article-id={group.articleId}
+                                        onchange={handleSelectArticle}>
+                                    </lightning-input>
+                                </div>
+                            </template>
+
+ <!-- /: the article number now leads the section
+                             title (Article # · Title · N open) — see sectionLabel
+                             in the JS. No separate link column: the inbox shows the
+                             number inline for reference; navigation lives elsewhere. -->
+                        <lightning-accordion-section
+                            class="slds-col"
+                            name={group.articleId}
+                            label={group.sectionLabel}>
+
+ <!-- Actions slot. kb-actions-slot keeps the
+                                 action buttons at their natural width so a long
+                                 article title yields (wraps) instead of squeezing
+                                 the buttons and forcing their labels onto 2 lines. -->
+                            <span slot="actions" class="slds-grid slds-grid_vertical-align-center kb-actions-slot">
+
+                                <template lwc:if={group.pendingDraftId}>
+                                    <span class="slds-badge slds-theme_warning slds-var-m-right_x-small kb-badge-nowrap">
+                                        <lightning-icon icon-name="utility:warning"
+                                                        alternative-text="Pending draft"
+                                                        size="x-small"
+                                                        class="slds-var-m-right_xx-small">
+                                        </lightning-icon>
+                                        Pending draft
+                                    </span>
+                                    <a href={group.pendingDraftUrl}
+                                       target="_blank"
+                                       class="slds-text-body_small slds-var-m-right_small kb-link-nowrap">
+                                        View draft
+                                    </a>
+                                </template>
+                                <lightning-button-group>
+                                    <lightning-button
+                                        label="Fix Issues"
+                                        variant="brand"
+                                        icon-name="utility:magicwand"
+                                        data-article-id={group.articleId}
+                                        onclick={handleFixIssues}
+                                        disabled={isFixDisabled}>
+                                    </lightning-button>
+                                    <lightning-button
+                                        label="Dismiss Issues"
+                                        variant="neutral"
+                                        icon-name="utility:close"
+                                        data-article-id={group.articleId}
+                                        onclick={handleDismissIssues}>
+                                    </lightning-button>
+                                    <lightning-button
+                                        label="View Article"
+                                        variant="neutral"
+                                        icon-name="utility:open"
+                                        data-article-id={group.articleId}
+                                        onclick={handleViewArticle}>
+                                    </lightning-button>
+                                </lightning-button-group>
+                            </span>
+
+                            <!-- Recommendation table -->
+                            <div class="slds-var-m-bottom_small">
+                                <div class="slds-grid slds-grid_vertical-align-center
+                                            slds-border_bottom slds-var-p-vertical_xx-small
+                                            slds-text-title_caps slds-text-color_weak kb-rec-header">
+                                    <div class="slds-col slds-size_2-of-12">Dimension</div>
+                                    <div class="slds-col slds-size_2-of-12">Impact</div>
+                                    <div class="slds-col slds-size_6-of-12">Issues</div>
+                                    <div class="slds-col slds-size_2-of-12">Status</div>
+                                </div>
+                                <template for:each={group.recommendations} for:item="rec">
+                                    <div key={rec.recId}
+                                         data-rec-id={rec.recId}
+                                         tabindex="-1"
+                                         class="slds-grid slds-grid_vertical-align-start
+                                                slds-border_bottom slds-var-p-vertical_small">
+                                        <div class="slds-col slds-size_2-of-12">
+                                            <lightning-badge label={rec.dimension}></lightning-badge>
+                                        </div>
+                                        <div class="slds-col slds-size_2-of-12">
+                                            <template lwc:if={rec.impactLabel}>
+                                                <span class={rec.impactBadgeClass}>
+                                                    <span class="slds-assistive-text">Impact: </span>{rec.impactLabel}
+                                                </span>
+                                            </template>
+                                        </div>
+                                        <div class="slds-col slds-size_6-of-12">
+                                            <p class="slds-text-body_small">{rec.recommendation}</p>
+                                        </div>
+                                        <div class="slds-col slds-size_2-of-12">
+                                            <template lwc:if={rec.isErrored}>
+                                                <span class="slds-badge slds-theme_error slds-var-m-right_x-small kb-badge-nowrap">
+                                                    <span class="slds-assistive-text">Status: </span>Failed
+                                                </span>
+                                                <lightning-button
+                                                    label="Retry"
+                                                    variant="neutral"
+                                                    icon-name="utility:refresh"
+                                                    data-rec-id={rec.recId}
+                                                    onclick={handleRetry}>
+                                                </lightning-button>
+                                            </template>
+                                        </div>
+                                    </div>
+                                </template>
+                            </div>
+
+                        </lightning-accordion-section>
+                        </div>
+                    </template>
+                </lightning-accordion>
+
+ <!--— pager. Prev/Next walk article pages; the summary shows
+                     the real X–Y of N so scope is never hidden. -->
+                <template lwc:if={hasMultiplePages}>
+                    <div class="slds-grid slds-grid_align-spread slds-grid_vertical-align-center slds-var-m-top_medium">
+                        <lightning-button
+                            label="Previous"
+                            icon-name="utility:chevronleft"
+                            disabled={isFirstPage}
+                            onclick={handlePrevPage}>
+                        </lightning-button>
+                        <span class="slds-text-body_small slds-text-color_weak">{pageSummary}</span>
+                        <lightning-button
+                            label="Next"
+                            icon-name="utility:chevronright"
+                            icon-position="right"
+                            disabled={isLastPage}
+                            onclick={handleNextPage}>
+                        </lightning-button>
+                    </div>
+                </template>
+            </template>
+
+        </template>
+
+        <!-- No data at all (not just empty filter) -->
+        <template lwc:if={showEmptyState}>
+            <div class="slds-text-align_center slds-var-p-vertical_xx-large">
+                <lightning-icon icon-name="utility:knowledge_base" size="large"
+                    class="kb-icon-muted">
+                </lightning-icon>
+                <h3 class="slds-text-heading_small slds-var-m-top_medium">No open improvements</h3>
+                <p class="slds-text-color_weak slds-var-m-top_x-small">
+                    Run an assessment to generate improvement recommendations for your articles.
+                </p>
+            </div>
+        </template>
+
+    </div>
+</template>

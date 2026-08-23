@@ -1,0 +1,30 @@
+/* run filter (variant B). Trigger button reads like a combobox:
+   full-width, left-aligned label with a chevron pushed to the right. */
+.trigger-btn {
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    text-align: left;
+}
+
+/* Anchor the absolutely-positioned dropdown to the trigger. */
+.panel-anchor {
+    position: relative;
+}
+
+.panel-open {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    /* SLDS overlay band — matches the framework's dropdown/popover layer so the
+       panel sits above adjacent cards without an arbitrary magic number. */
+    z-index: var(--slds-c-dropdown-position-zindex, 7000);
+}
+
+/* Scroll the list when the filtered set is long. */
+.scroll-panel {
+    max-height: 16rem;
+    overflow-y: auto;
+}

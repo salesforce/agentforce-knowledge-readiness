@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Async_Job_Ids__c</fullName>
+    <description>Comma-separated AsyncApexJob Ids captured at dispatch time (KBAssessmentDimensionQueueable, KBAssessmentBatch, Tier2/3/4, KBAssessmentPipelineCallback). Consumed by KBAssessmentService.cancelAssessmentRun to call System.abortJob on each pending job.</description>
+    <externalId>false</externalId>
+    <label>Async Job Ids</label>
+    <length>4096</length>
+    <required>false</required>
+    <trackTrending>false</trackTrending>
+    <type>LongTextArea</type>
+    <visibleLines>3</visibleLines>
+</CustomField>

@@ -1,0 +1,41 @@
+:host {
+    display: block;
+}
+
+.slds-progress-bar {
+    margin-bottom: 1rem;
+}
+
+/*
+ * Read-only opportunity-path stepper. The path-type
+ * lightning-progress-indicator renders each stage as a clickable-looking
+ * button, but the new-assessment flow only advances via the modal footer
+ * (Back / Continue). Disabling pointer events on the indicator removes the
+ * misleading click/hover affordance — it cascades through the indicator's
+ * shadow boundary because hit-testing honours an ancestor's pointer-events.
+ */
+.read-only-path {
+    pointer-events: none;
+    cursor: default;
+}
+
+/*
+ * Focus-trap sentinels. Two zero-size, off-screen elements that bookend
+ * the dialog. They must stay in the tab order (so Tab/Shift+Tab lands on them
+ * at the boundary and we can wrap focus), so they can't use display:none or
+ * visibility:hidden — those remove an element from the sequential focus order.
+ * They carry no visible content and never receive a visible focus ring (focus
+ * is programmatically bounced off them in the same tick).
+ */
+.focus-sentinel {
+    position: fixed;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+    outline: none;
+}

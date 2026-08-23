@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Weights_JSON__c</fullName>
+    <description>Admin-editable runtime weights, keyed by dimension DeveloperName. Example: {"Completeness":0.30,"Structure":0.20,"Clarity":0.10,"Freshness":0.10,"Duplication":0.15,"Conflict":0.15}. Stored as Text because hierarchy custom settings do not allow LongTextArea. When empty or missing a key, falls back to KB_Scoring_Dimension__mdt.Default_Weight__c.</description>
+    <externalId>false</externalId>
+    <label>Weights JSON</label>
+    <length>255</length>
+    <required>false</required>
+    <trackTrending>false</trackTrending>
+    <type>Text</type>
+    <unique>false</unique>
+</CustomField>

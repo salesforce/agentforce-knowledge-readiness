@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Merged_Article_Version__c</fullName>
+    <deleteConstraint>SetNull</deleteConstraint>
+    <description>Lookup to the Golden Record Knowledge Article Version produced by a merge, so the merged-source lineage can be surfaced via a native related list on the Knowledge record page (no custom component). Best-effort / display-only: the durable source of truth stays the version-independent Text master ids (Merged_Knowledge_Article_Id__c, Knowledge_Article_Id_1/2__c) — a lookup binds to a specific version, so after the survivor republishes it points at an archived-but-present prior version (still renders). deleteConstraint=SetNull so deleting the article is never blocked by a candidate pointing at it; orphaned rows are closed by KBDuplicateCandidateReconciler.</description>
+    <label>Merged Article Version</label>
+    <referenceTo>Knowledge__kav</referenceTo>
+    <relationshipLabel>Merged Duplicate Candidates</relationshipLabel>
+    <relationshipName>Merged_Duplicate_Candidates</relationshipName>
+    <required>false</required>
+    <trackTrending>false</trackTrending>
+    <type>Lookup</type>
+</CustomField>

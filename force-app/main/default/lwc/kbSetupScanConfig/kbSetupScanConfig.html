@@ -1,0 +1,54 @@
+<template>
+    <div class="slds-card slds-p-around_medium">
+        <h3 class="slds-text-heading_small slds-m-bottom_x-small">Scan Configuration</h3>
+        <p class="slds-text-body_small slds-m-bottom_medium slds-text-color_weak">
+            Configure scoring thresholds, batch sizes, and general scan behaviour.
+        </p>
+
+        <!-- Freshness Thresholds -->
+        <div class="slds-section slds-is-open slds-m-bottom_medium">
+            <h4 class="slds-section__title slds-theme_shade slds-p-around_x-small">
+                <span class="slds-truncate" title="Freshness Thresholds">Freshness Thresholds</span>
+            </h4>
+            <div class="slds-section__content slds-grid slds-wrap slds-gutters_small">
+                <div class="slds-col slds-size_1-of-2 slds-p-bottom_small">
+                    <lightning-input
+                        type="number"
+                        label="Warning Threshold (months)"
+                        value={_config.freshnessThresholdMonths}
+                        data-field="freshnessThresholdMonths"
+                        onchange={handleChange}
+                        min="1"
+                        max="120"
+                        field-level-help="Articles older than this are penalised for staleness">
+                    </lightning-input>
+                </div>
+                <div class="slds-col slds-size_1-of-2 slds-p-bottom_small">
+                    <lightning-input
+                        type="number"
+                        label="Critical Threshold (months)"
+                        value={_config.freshnessCriticalMonths}
+                        data-field="freshnessCriticalMonths"
+                        onchange={handleChange}
+                        min="1"
+                        max="120"
+                        field-level-help="Articles older than this score very low">
+                    </lightning-input>
+                </div>
+            </div>
+        </div>
+
+        <!-- Data Categories toggle intentionally lives only on the Essentials
+             screen (kbSetupExperienceWizard), not here — it was duplicated. Both
+             bound to the same KB_Scan_Config__c.usesDataCategories; the child now
+             passes that value through transparently via the shared config. -->
+
+        <div class="slds-m-top_medium">
+            <lightning-button
+                label="Reset to Defaults"
+                variant="neutral"
+                onclick={handleResetDefaults}>
+            </lightning-button>
+        </div>
+    </div>
+</template>

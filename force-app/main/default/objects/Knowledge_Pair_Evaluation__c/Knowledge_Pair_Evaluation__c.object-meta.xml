@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomObject xmlns="http://soap.sforce.com/2006/04/metadata">
+    <deploymentStatus>Deployed</deploymentStatus>
+    <description>Caching layer to prevent redundant LLM calls for previously checked article version pairs.</description>
+    <enableActivities>false</enableActivities>
+    <enableBulkApi>true</enableBulkApi>
+    <enableReports>true</enableReports>
+    <enableSearch>false</enableSearch>
+    <enableSharing>true</enableSharing>
+    <enableStreamingApi>true</enableStreamingApi>
+    <label>Knowledge Pair Evaluation</label>
+    <nameField>
+        <displayFormat>KPE-{0000}</displayFormat>
+        <label>Evaluation Number</label>
+        <type>AutoNumber</type>
+    </nameField>
+    <pluralLabel>Knowledge Pair Evaluations</pluralLabel>
+    <sharingModel>Private</sharingModel>
+</CustomObject>

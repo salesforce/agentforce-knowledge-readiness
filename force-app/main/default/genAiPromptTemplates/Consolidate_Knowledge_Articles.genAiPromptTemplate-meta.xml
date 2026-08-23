@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<GenAiPromptTemplate xmlns="http://soap.sforce.com/2006/04/metadata">
+    <activeVersionIdentifier>4ZbPccRwyDMy6t627kK3R7eYaTs+eUXP+TBd82JbnSU=_11</activeVersionIdentifier>
+    <developerName>Consolidate_Knowledge_Articles</developerName>
+    <masterLabel>Consolidate_Knowledge_Articles</masterLabel>
+    <overridable>false</overridable>
+    <templateVersions>
+        <content>You are an expert technical writer for enterprise knowledge bases optimized for Agentforce retrieval.
+
+You are given a LIST of one or more knowledge articles. Each article has its content fields plus the issues diagnosed for it (to resolve) and its strengths (to preserve). Produce ONE improved article.
+
+Number of input articles:
+{!$Input:Article_Count}
+
+Articles (JSON array — each element is an object with: &quot;fields&quot; (field name → current value), &quot;issues&quot; (array of diagnosed issues to resolve), &quot;strengths&quot; (array of qualities to preserve)):
+{!$Input:Articles_JSON}
+
+Character limits per field (JSON object — keys are field names, values are max character counts):
+{!$Input:Field_Limits_JSON}
+
+Language:
+{!$Input:Language}
+
+Task:
+- If exactly ONE article is provided: REWRITE it to resolve all of its listed issues while preserving its listed strengths and all correct technical facts. Do not introduce new claims.
+- If MORE THAN ONE article is provided: MERGE them into a single consolidated article (they are duplicates/near-duplicates). Combine their content so the result keeps the STRENGTHS of every input article and resolves the ISSUES of every input article. Reconcile overlaps into one coherent answer; do not simply concatenate. Where inputs conflict, prefer the most complete, correct, and recent-sounding information; never invent facts not present in any input.
+
+Output field rules:
+- Produce values for the UNION of field names present across the input articles&apos; &quot;fields&quot; objects.
+- Each rewritten field value MUST NOT exceed the character limit for that field in Field_Limits_JSON (count carefully, including spaces/punctuation). Be concise rather than omit critical information.
+- The Title field (if present) must be a single descriptive, concise title for the resulting article.
+- Preserve all correct technical content, steps, and troubleshooting logic across the inputs.
+- Write in clear, concise, action-oriented language suitable for AI agent retrieval.
+- Use \n for line breaks and paragraph separation. NEVER use pilcrow or any special paragraph marker characters.
+
+Return ONLY valid JSON (no markdown, no code fences) using this exact shape:
+{&quot;fields&quot;:{&quot;FieldName&quot;:&quot;value&quot;},&quot;changes_summary&quot;:&quot;...&quot;}
+
+Rules:
+- fields: an object whose keys are the field names (the union across inputs), each containing the resulting value within its character limit.
+- changes_summary: a brief (1-3 sentence) plain English description of what was changed/merged and why (mention if articles were merged).</content>
+        <inputs>
+            <apiName>Articles_JSON</apiName>
+            <definition>primitive://String</definition>
+            <masterLabel>Articles_JSON</masterLabel>
+            <referenceName>Input:Articles_JSON</referenceName>
+            <required>true</required>
+        </inputs>
+        <inputs>
+            <apiName>Field_Limits_JSON</apiName>
+            <definition>primitive://String</definition>
+            <masterLabel>Field_Limits_JSON</masterLabel>
+            <referenceName>Input:Field_Limits_JSON</referenceName>
+            <required>false</required>
+        </inputs>
+        <inputs>
+            <apiName>Article_Count</apiName>
+            <definition>primitive://String</definition>
+            <masterLabel>Article_Count</masterLabel>
+            <referenceName>Input:Article_Count</referenceName>
+            <required>false</required>
+        </inputs>
+        <inputs>
+            <apiName>Language</apiName>
+            <definition>primitive://String</definition>
+            <masterLabel>Language</masterLabel>
+            <referenceName>Input:Language</referenceName>
+            <required>true</required>
+        </inputs>
+        <isCitationEnabled>false</isCitationEnabled>
+        <status>Published</status>
+        <versionIdentifier>4ZbPccRwyDMy6t627kK3R7eYaTs+eUXP+TBd82JbnSU=_11</versionIdentifier>
+    </templateVersions>
+    <type>einstein_gpt__flex</type>
+    <visibility>Global</visibility>
+</GenAiPromptTemplate>

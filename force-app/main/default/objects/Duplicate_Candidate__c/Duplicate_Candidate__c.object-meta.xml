@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomObject xmlns="http://soap.sforce.com/2006/04/metadata">
+    <deploymentStatus>Deployed</deploymentStatus>
+    <description>Central output object for the 5-Tier Deduplication Pipeline. Tracks duplicate article pairs from detection through resolution or rejection. Replaces Knowledge_Audit_Flag__c for dedup-specific workflows.</description>
+    <enableActivities>false</enableActivities>
+    <enableReports>true</enableReports>
+    <enableSearch>true</enableSearch>
+    <label>Duplicate Candidate</label>
+    <nameField>
+        <displayFormat>DC-{0000}</displayFormat>
+        <label>Candidate Number</label>
+        <type>AutoNumber</type>
+    </nameField>
+    <pluralLabel>Duplicate Candidates</pluralLabel>
+    <sharingModel>ControlledByParent</sharingModel>
+</CustomObject>

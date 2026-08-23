@@ -1,0 +1,87 @@
+<template>
+    <lightning-modal-header label="Article Comparison"></lightning-modal-header>
+    <lightning-modal-body>
+        <template lwc:if={comparisonData}>
+            <div class="slds-grid slds-gutters">
+                <!-- Article A -->
+                <div class="slds-col slds-size_1-of-2">
+                    <div class="slds-box">
+                        <h3 class="slds-text-heading_small slds-m-bottom_small">
+                            Article A: {articleA.articleNumber}
+                        </h3>
+                        <dl class="slds-list_horizontal slds-wrap">
+                            <dt class="slds-item_label slds-text-color_weak">Title</dt>
+                            <dd class="slds-item_detail">{articleA.title}</dd>
+                            <dt class="slds-item_label slds-text-color_weak">Status</dt>
+                            <dd class="slds-item_detail">{articleA.publishStatus}</dd>
+                            <dt class="slds-item_label slds-text-color_weak">Version</dt>
+                            <dd class="slds-item_detail">{articleA.versionNumber}</dd>
+                            <dt class="slds-item_label slds-text-color_weak">Last Modified By</dt>
+                            <dd class="slds-item_detail">{articleA.lastModifiedBy}</dd>
+                        </dl>
+                        <div class="slds-m-top_small">
+                            <h4 class="slds-text-title_bold">Summary</h4>
+                            <p class="article-summary">{articleA.summary}</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Article B -->
+                <div class="slds-col slds-size_1-of-2">
+                    <div class="slds-box">
+                        <h3 class="slds-text-heading_small slds-m-bottom_small">
+                            Article B: {articleB.articleNumber}
+                        </h3>
+                        <dl class="slds-list_horizontal slds-wrap">
+                            <dt class="slds-item_label slds-text-color_weak">Title</dt>
+                            <dd class="slds-item_detail">{articleB.title}</dd>
+                            <dt class="slds-item_label slds-text-color_weak">Status</dt>
+                            <dd class="slds-item_detail">{articleB.publishStatus}</dd>
+                            <dt class="slds-item_label slds-text-color_weak">Version</dt>
+                            <dd class="slds-item_detail">{articleB.versionNumber}</dd>
+                            <dt class="slds-item_label slds-text-color_weak">Last Modified By</dt>
+                            <dd class="slds-item_detail">{articleB.lastModifiedBy}</dd>
+                        </dl>
+                        <div class="slds-m-top_small">
+                            <h4 class="slds-text-title_bold">Summary</h4>
+                            <p class="article-summary">{articleB.summary}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- AI Reasoning -->
+            <template lwc:if={reasoning}>
+                <div class="slds-box slds-m-top_medium slds-theme_shade">
+                    <h4 class="slds-text-title_bold slds-m-bottom_x-small">AI Reasoning</h4>
+                    <p>{reasoning}</p>
+                </div>
+            </template>
+        </template>
+    </lightning-modal-body>
+    <lightning-modal-footer>
+        <lightning-button label="Close" onclick={handleClose}></lightning-button>
+ <!--: the mutating actions are hidden in read-only
+             mode (Resolved/Superseded/discarded rows open Compare to inspect
+             only). Showing them there would let a click silently un-resolve a
+             completed merge. -->
+        <template lwc:if={showActions}>
+            <lightning-button
+                label="Resolve"
+                variant="success"
+                onclick={handleResolve}
+                class="slds-m-left_x-small"
+            ></lightning-button>
+ <!--: soft "Not a Duplicate" discard— the host routes this into the
+                 reason modal, which re-surfaces the pair next assessment rather than
+                 a permanent destructive reject. Label + brand variant match the row
+                 action and kbDuplicateRejectModal (not a red destructive button). -->
+            <lightning-button
+                label="Not a Duplicate"
+                variant="brand"
+                onclick={handleReject}
+                class="slds-m-left_x-small"
+            ></lightning-button>
+        </template>
+    </lightning-modal-footer>
+</template>

@@ -1,0 +1,84 @@
+<template>
+    <h3 class="slds-text-heading_small slds-m-bottom_x-small">Duplicate Detection</h3>
+    <p class="slds-text-body_small slds-text-color_weak slds-m-bottom_medium">
+        Tune how the deduplication pipeline finds and groups similar articles.
+    </p>
+
+    <!-- Matching -->
+    <div class="slds-section slds-is-open slds-m-bottom_medium">
+        <h4 class="slds-section__title slds-theme_shade slds-p-around_x-small">Matching</h4>
+        <div class="slds-section__content slds-p-around_small">
+            <div class="slds-grid slds-wrap slds-gutters">
+                <div class="slds-col slds-size_1-of-2 slds-p-bottom_small">
+                    <lightning-input
+                        type="number" label="Similar articles to scan per article"
+                        value={tier2TopK} data-field="tier2TopK"
+                        min="1" max="100" step="1"
+                        field-level-help={helpTopK}
+                        onchange={handleChange}></lightning-input>
+                </div>
+                <div class="slds-col slds-size_1-of-2 slds-p-bottom_small">
+                    <lightning-input
+                        type="number" label="Minimum similarity to flag a match (0–1)"
+                        value={tier2SimilarityThreshold} data-field="tier2SimilarityThreshold"
+                        min="0" max="1" step="0.01"
+                        field-level-help={helpSimThreshold}
+                        onchange={handleChange}></lightning-input>
+                </div>
+            </div>
+            <div class="slds-grid slds-wrap slds-gutters">
+                <div class="slds-col slds-size_1-of-2 slds-p-bottom_small">
+                    <lightning-input
+                        type="number" label="Max matches to deep-compare per article"
+                        value={maxFinalists} data-field="maxFinalists"
+                        min="1" max="10" step="1"
+                        field-level-help={helpMaxFinalists}
+                        onchange={handleChange}></lightning-input>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Pre-publish check (record page) — the single-article draft duplicate
+         scan (verifyDraft) on the Knowledge record page. Conceptually part of
+         duplicate detection, but its top-K lives on KB_Vector_Search_Config__c,
+         so the parent owns the value and edits go out on a separate event.
+         Gated on the KB_PrePublishCheck_Beta perm (via showPrepublish). -->
+    <template lwc:if={showPrepublish}>
+        <div class="slds-section slds-is-open slds-m-bottom_medium">
+            <h4 class="slds-section__title slds-theme_shade slds-p-around_x-small">Pre-publish check (record page)</h4>
+            <div class="slds-section__content slds-p-around_small">
+                <div class="slds-grid slds-wrap slds-gutters">
+                    <div class="slds-col slds-size_1-of-2 slds-p-bottom_small">
+                        <lightning-input
+                            type="number" label="Similar articles to scan (pre-publish)"
+                            value={prepublishTopK}
+                            min="1" max="100" step="1"
+                            field-level-help={helpPrepublishTopK}
+                            onchange={handlePrepublishChange}></lightning-input>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </template>
+
+    <!-- Languages -->
+    <div class="slds-section slds-is-open slds-m-bottom_medium">
+        <h4 class="slds-section__title slds-theme_shade slds-p-around_x-small">Languages</h4>
+        <div class="slds-section__content slds-p-around_small">
+            <div class="slds-grid slds-wrap slds-gutters">
+                <div class="slds-col slds-size_1-of-2 slds-p-bottom_small">
+                    <lightning-input
+                        type="text" label="Supported Languages"
+                        value={supportedLanguages} data-field="supportedLanguages"
+                        field-level-help={helpLanguages}
+                        read-only></lightning-input>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="slds-m-top_medium">
+        <lightning-button label="Reset to Defaults" variant="neutral" onclick={handleResetDefaults}></lightning-button>
+    </div>
+</template>

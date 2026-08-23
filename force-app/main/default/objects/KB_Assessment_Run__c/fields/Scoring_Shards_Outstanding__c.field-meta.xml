@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Scoring_Shards_Outstanding__c</fullName>
+    <description>Join-barrier counter for parallel scoring batch shards (>50-article path). Seeded by KBAssessmentService.dispatchBatch with the number of concurrent KBAssessmentBatch shards; each shard's finish() decrements it under FOR UPDATE. The shard that decrements it to 0 is last-done and dispatches pipeline finalization. Null/0 means the single-batch (legacy) path, where finish() dispatches finalization directly.</description>
+    <externalId>false</externalId>
+    <label>Scoring Shards Outstanding</label>
+    <precision>9</precision>
+    <required>false</required>
+    <scale>0</scale>
+    <trackTrending>false</trackTrending>
+    <type>Number</type>
+    <unique>false</unique>
+</CustomField>

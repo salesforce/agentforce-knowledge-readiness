@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Status_Message__c</fullName>
+    <description>Last status message published for this run. Populated by KBAssessmentPipelineCallback on terminal Failed transitions; consumed by the runner LWC's safety-net poll to mirror the live Platform Event channel's reason. Empty on Completed runs.</description>
+    <externalId>false</externalId>
+    <label>Status Message</label>
+    <length>1024</length>
+    <required>false</required>
+    <trackTrending>false</trackTrending>
+    <type>LongTextArea</type>
+    <visibleLines>2</visibleLines>
+</CustomField>

@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Query_Prefilters_JSON__c</fullName>
+    <description>Serialized JSON prefilters. publishStatus and language are read at runtime by KBRuntimeConfigService.getRuntimeFilters() and feed SOQL article selection in the Batch Runner and KPI dashboards. articleType and titlePattern are deserialized into RuntimeFilters but no runtime caller reads them today (validation only). Never applied to dedup candidate search — neither the Data Cloud vector_search() path nor the Tier 2 SOQL fallback honor prefilters, so admins running the same scan with different prefilter configs see the same dedup candidates on the same dataset.</description>
+    <externalId>false</externalId>
+    <label>Query Prefilters JSON</label>
+    <length>255</length>
+    <required>false</required>
+    <trackTrending>false</trackTrending>
+    <type>Text</type>
+    <unique>false</unique>
+</CustomField>

@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomMetadata xmlns="http://soap.sforce.com/2006/04/metadata" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+    <label>Default</label>
+    <protected>false</protected>
+    <values>
+        <field>Implementation_Class__c</field>
+        <value xsi:type="xsd:string">ConnectApiVectorSearchService</value>
+    </values>
+    <values>
+        <field>Is_Active__c</field>
+        <value xsi:type="xsd:boolean">true</value>
+    </values>
+
+    <values>
+        <field>Search_Index_Name__c</field>
+        <value xsi:type="xsd:string">KA_Knowledge_index</value>
+    </values>
+    <values>
+        <field>Similarity_Threshold__c</field>
+        <value xsi:type="xsd:double">0.75</value>
+    </values>
+    <values>
+        <field>Max_Results__c</field>
+        <value xsi:type="xsd:double">20</value>
+    </values>
+    <values>
+        <field>Data_Space_Name__c</field>
+        <value xsi:type="xsd:string">default</value>
+    </values>
+</CustomMetadata>

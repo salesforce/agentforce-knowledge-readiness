@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Tier4_Lanes_Outstanding__c</fullName>
+    <description>Join-barrier counter for parallel Tier 4 dedup shards (C). Seeded by Tier3DispatchQueueable with the number of concurrent Tier3AgenticBatch shards; each shard's finish() decrements it under FOR UPDATE. The shard that decrements it to 0 is the last one done and enqueues KBAssessmentPipelineCallback. Null means the single-lane legacy path (Tier3AgenticQueueable fires the callback directly).</description>
+    <externalId>false</externalId>
+    <label>Tier 4 Lanes Outstanding</label>
+    <precision>9</precision>
+    <required>false</required>
+    <scale>0</scale>
+    <trackTrending>false</trackTrending>
+    <type>Number</type>
+    <unique>false</unique>
+</CustomField>

@@ -1,0 +1,136 @@
+<template>
+    <div class="slds-card slds-p-around_medium">
+        <h3 class="slds-text-heading_small slds-m-bottom_x-small">Scoring Prompt Templates</h3>
+        <p class="slds-text-body_small slds-text-color_weak slds-m-bottom_medium">
+            Scoring prompts are managed as Salesforce GenAI Prompt Templates.
+            To edit a template, open it in <strong>Prompt Builder</strong> where you can test, version, and publish changes.
+        </p>
+
+ <!-- In-app editing guidance: the scorers parse a strict JSON
+             return shape. Spelled out here rather than linking to an external
+             README so there's no long-term link to maintain. -->
+        <div class="slds-box slds-theme_warning slds-p-around_small slds-m-bottom_medium editing-guidance" role="region" aria-label="Prompt editing guidance">
+            <h4 class="slds-text-title_bold slds-m-bottom_x-small">
+                <lightning-icon icon-name="utility:warning" size="xx-small" class="slds-m-right_xx-small" aria-hidden="true"></lightning-icon>
+                Before you edit: keep the JSON return shape intact
+            </h4>
+            <p class="slds-text-body_small slds-m-bottom_x-small">
+                Each scoring template must return a single <strong>JSON object</strong> that the dimension
+                scorer parses. The model reads structured fields — typically a numeric
+                <code>score</code>, a <code>reasoning</code> string, and arrays of
+                <code>strengths</code> / <code>issues</code> (each issue carrying its
+                recommendation text and an impact signal). If the returned JSON is malformed,
+                renamed, or wrapped in prose, the scorer <strong>cannot parse it and silently
+                falls back to a baseline score of 60</strong> — no error is surfaced in the UI.
+            </p>
+            <p class="slds-text-body_small slds-m-bottom_x-small">Safe-editing pattern:</p>
+            <ul class="slds-list_dotted slds-text-body_small slds-m-bottom_x-small">
+                <li>Change the <em>wording / instructions / examples</em> in the prompt freely.</li>
+                <li>Do <strong>not</strong> rename, remove, or re-nest the JSON output keys.</li>
+                <li>Keep the "respond with JSON only" instruction — no preamble, no markdown fences.</li>
+                <li>After editing, run the template's built-in test in Prompt Builder and confirm the
+                    output still parses as the same JSON shape before activating the new version.</li>
+            </ul>
+            <p class="slds-text-body_small slds-text-color_weak">
+                A dimension that suddenly reports a flat 60 for every article is the tell-tale sign of a
+                broken return shape — revert to the previous template version if you see this.
+            </p>
+        </div>
+
+        <div class="slds-box slds-theme_info slds-p-around_x-small slds-m-bottom_medium">
+            <lightning-icon icon-name="utility:info" size="xx-small" class="slds-m-right_x-small" aria-hidden="true"></lightning-icon>
+            <span class="slds-text-body_small">
+                <strong>Completeness</strong>, <strong>Structure</strong>, and <strong>Clarity</strong> use GenAI templates for LLM evaluation.
+                <strong>Freshness</strong> is scored deterministically.
+                <strong>Duplication</strong> and <strong>Conflict</strong> come from the deduplication pipeline, not prompts.
+            </span>
+        </div>
+
+        <template if:true={isLoading}>
+            <lightning-spinner alternative-text="Checking templates..." size="small"></lightning-spinner>
+        </template>
+
+        <template if:false={isLoading}>
+            <lightning-tabset>
+                <lightning-tab label="Scoring" value="scoring">
+                    <template for:each={scoringStatuses} for:item="t">
+                        <div key={t.name} class="template-row slds-grid slds-grid_vertical-align-center slds-p-around_x-small slds-border_bottom">
+                            <div class="slds-col slds-size_6-of-12">
+                                <div class="slds-text-body_regular slds-text-title_bold">{t.name}</div>
+                                <div class="slds-text-body_small slds-text-color_weak">{t.description}</div>
+                            </div>
+                            <div class="slds-col slds-size_2-of-12 slds-text-align_center">
+                                <template if:true={t.isDeployed}>
+                                    <lightning-icon icon-name="utility:success" size="x-small" class="icon-success" aria-hidden="true"></lightning-icon>
+                                    <span class="slds-text-body_small slds-text-color_success slds-m-left_xx-small">Deployed</span>
+                                </template>
+                                <template if:false={t.isDeployed}>
+                                    <lightning-icon icon-name="utility:error" size="x-small" class="icon-error" aria-hidden="true"></lightning-icon>
+                                    <span class="slds-text-body_small slds-text-color_error slds-m-left_xx-small">Missing</span>
+                                </template>
+                            </div>
+                            <div class="slds-col slds-size_4-of-12 slds-text-align_right">
+                                <lightning-button
+                                    label="Open in Prompt Builder"
+                                    variant="base"
+                                    icon-name="utility:new_window"
+                                    icon-position="right"
+                                    data-name={t.name}
+                                    disabled={t.noEditUrl}
+                                    onclick={handleOpenPromptBuilder}>
+                                </lightning-button>
+                            </div>
+                        </div>
+                    </template>
+                </lightning-tab>
+
+                <template if:true={hasOtherTemplates}>
+                    <lightning-tab label="Other" value="other">
+                        <p class="slds-text-body_small slds-text-color_weak slds-p-around_x-small">
+                            Pipeline templates that are not a single readiness dimension. The same JSON
+                            return-shape caution applies — edit wording, not the output structure.
+                        </p>
+                        <template for:each={otherStatuses} for:item="t">
+                            <div key={t.name} class="template-row slds-grid slds-grid_vertical-align-center slds-p-around_x-small slds-border_bottom">
+                                <div class="slds-col slds-size_6-of-12">
+                                    <div class="slds-text-body_regular slds-text-title_bold">{t.name}</div>
+                                    <div class="slds-text-body_small slds-text-color_weak">{t.description}</div>
+                                </div>
+                                <div class="slds-col slds-size_2-of-12 slds-text-align_center">
+                                    <template if:true={t.isDeployed}>
+                                        <lightning-icon icon-name="utility:success" size="x-small" class="icon-success" aria-hidden="true"></lightning-icon>
+                                        <span class="slds-text-body_small slds-text-color_success slds-m-left_xx-small">Deployed</span>
+                                    </template>
+                                    <template if:false={t.isDeployed}>
+                                        <lightning-icon icon-name="utility:error" size="x-small" class="icon-error" aria-hidden="true"></lightning-icon>
+                                        <span class="slds-text-body_small slds-text-color_error slds-m-left_xx-small">Missing</span>
+                                    </template>
+                                </div>
+                                <div class="slds-col slds-size_4-of-12 slds-text-align_right">
+                                    <lightning-button
+                                        label="Open in Prompt Builder"
+                                        variant="base"
+                                        icon-name="utility:new_window"
+                                        icon-position="right"
+                                        data-name={t.name}
+                                        disabled={t.noEditUrl}
+                                        onclick={handleOpenPromptBuilder}>
+                                    </lightning-button>
+                                </div>
+                            </div>
+                        </template>
+                    </lightning-tab>
+                </template>
+            </lightning-tabset>
+
+            <div class="slds-m-top_small">
+                <lightning-button
+                    label="Refresh Status"
+                    variant="neutral"
+                    icon-name="utility:refresh"
+                    onclick={handleRefresh}>
+                </lightning-button>
+            </div>
+        </template>
+    </div>
+</template>

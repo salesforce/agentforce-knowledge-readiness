@@ -1,0 +1,154 @@
+:host {
+    display: block;
+}
+
+/* ── Config banner ─────────────────────────────────────────────────────────── */
+
+.config-banner {
+    display: flex;
+    align-items: center;
+    padding: 0.5rem 1rem;
+    border-radius: 0.25rem;
+    background-color: #e8f4fd;
+    border: 1px solid #1b96ff;
+}
+
+.config-banner a {
+    color: #0070d2;
+    text-decoration: underline;
+    margin-left: 0.25rem;
+}
+
+/* ── Empty state ───────────────────────────────────────────────────────────── */
+
+.empty-state {
+    max-width: 600px;
+    margin: 2rem auto;
+    border-radius: 0.5rem;
+}
+
+/* ── KPI cards ─────────────────────────────────────────────────────────────── */
+
+.kpi-card {
+    padding: 1rem;
+    border-radius: 0.25rem;
+}
+
+.kpi-label {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: #706e6b;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    margin-bottom: 0.25rem;
+}
+
+.kpi-value {
+    font-size: 1.75rem;
+    font-weight: 700;
+    color: #181818;
+    line-height: 1.2;
+}
+
+.kpi-value--highlight {
+    color: #0176d3;
+}
+
+.kpi-value--warn {
+    color: #c23934;
+}
+
+.kpi-value--info {
+    color: #8c4b02;
+}
+
+.kpi-sub {
+    font-size: 0.75rem;
+    color: #706e6b;
+    margin-top: 0.15rem;
+}
+
+.kpi-action {
+    font-size: 0.75rem;
+    color: #0070d2;
+    text-decoration: underline;
+    margin-top: 0.25rem;
+    display: inline-block;
+}
+
+/* ── Score panel ───────────────────────────────────────────────────────────── */
+
+.score-panel {
+    height: 100%;
+}
+
+/* ── Dimension trends ──────────────────────────────────────────────────────── */
+
+.dim-trend-row {
+    padding: 0.25rem 0;
+}
+
+.dim-trend-label {
+    font-size: 0.8125rem;
+    font-weight: 600;
+    color: #3e3e3c;
+    min-width: 7rem;
+    display: flex;
+    align-items: center;
+}
+
+.dim-trend-scores {
+    font-size: 0.8125rem;
+    min-width: 6rem;
+    text-align: right;
+}
+
+.dim-score {
+    font-weight: 700;
+}
+
+.weak-spot-icon {
+    --slds-c-icon-color-foreground-default: #c23934;
+}
+
+/* ── Run history ───────────────────────────────────────────────────────────── */
+
+.run-row {
+    font-size: 0.8125rem;
+}
+
+.run-row:last-child {
+    border-bottom: none !important;
+}
+
+.run-score {
+    font-weight: 700;
+    font-size: 1rem;
+}
+
+.compat-ok-icon {
+    --slds-c-icon-color-foreground-default: #2e844a;
+}
+
+.compat-warning {
+    font-size: 0.75rem;
+    color: #8c4b02;
+    display: flex;
+    align-items: center;
+}
+
+.compat-warning-chip {
+    font-size: 0.7rem;
+    color: #8c4b02;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 10rem;
+    display: inline-block;
+}
+
+/* ── Shared score colours ──────────────────────────────────────────────────── */
+
+.score-good { color: #2e844a; }
+.score-warn { color: #8c4b02; }
+.score-bad  { color: #c23934; }

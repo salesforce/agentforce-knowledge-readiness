@@ -1,0 +1,7 @@
+.DS_Store
+.vscode/
+.sf/
+.sfdx/
+.local-backups/
+node_modules
+*.log

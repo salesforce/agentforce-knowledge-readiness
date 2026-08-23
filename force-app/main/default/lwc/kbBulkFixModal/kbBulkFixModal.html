@@ -1,0 +1,54 @@
+<template>
+    <lightning-modal-header label="Fix Issues with AI"></lightning-modal-header>
+
+    <lightning-modal-body>
+        <p class="slds-text-body_regular slds-var-m-bottom_medium">
+            Fix all open issues for
+            <strong>{articleCount} article(s)</strong>
+            ({recCount} total recommendation(s)).
+            The AI will rewrite each article's content fields to address all identified issues.
+        </p>
+
+        <template lwc:if={hasPendingDraft}>
+            <div class="slds-notify slds-notify_alert slds-theme_warning slds-var-m-bottom_medium"
+                 role="alert">
+                <span class="slds-assistive-text">Warning</span>
+                <lightning-icon icon-name="utility:warning" size="x-small"
+                                class="slds-var-m-right_x-small"
+                                alternative-text="Warning"></lightning-icon>
+                Some selected articles have pending drafts. Choose how to handle them:
+            </div>
+            <lightning-radio-group
+                name="fixSource"
+                label="Draft handling"
+                options={fixSourceOptions}
+                value={fixSource}
+                type="radio"
+                onchange={handleFixSourceChange}>
+            </lightning-radio-group>
+        </template>
+
+        <template lwc:if={isProcessing}>
+            <div class="slds-var-m-top_medium slds-align_absolute-center">
+                <lightning-spinner alternative-text="Queuing fixes..." size="small"></lightning-spinner>
+                <span class="slds-var-m-left_small slds-text-color_weak">Queuing fixes...</span>
+            </div>
+        </template>
+    </lightning-modal-body>
+
+    <lightning-modal-footer>
+        <lightning-button
+            label="Cancel"
+            onclick={handleCancel}
+            disabled={isProcessing}>
+        </lightning-button>
+        <lightning-button
+            label={confirmLabel}
+            variant="brand"
+            icon-name="utility:einstein"
+            onclick={handleConfirm}
+            disabled={isProcessing}
+            class="slds-var-m-left_x-small">
+        </lightning-button>
+    </lightning-modal-footer>
+</template>

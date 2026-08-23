@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Dispatch_Generation__c</fullName>
+    <description>Monotonic scoring-dispatch generation. Incremented by KBAssessmentService.resetRunForRerun each time a run is re-dispatched. Each scoring worker (KBAssessmentBatch shard or KBAssessmentDimensionQueueable) captures the run's current generation at dispatch and, before writing dimension results, bails if its captured generation no longer matches the run's current one — so a straggler worker from an aborted prior wave (System.abortJob lets an in-flight chunk drain to completion) declines to write instead of colliding (UNABLE_TO_LOCK_ROW) with the new wave over the same KB_Article_Assessment__c rows. Null/0 = first dispatch.</description>
+    <externalId>false</externalId>
+    <label>Dispatch Generation</label>
+    <precision>9</precision>
+    <required>false</required>
+    <scale>0</scale>
+    <trackTrending>false</trackTrending>
+    <type>Number</type>
+    <unique>false</unique>
+</CustomField>

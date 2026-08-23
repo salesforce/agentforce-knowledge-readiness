@@ -1,0 +1,17 @@
+.coach-banner {
+    background: linear-gradient(90deg, #f3f9ff 0%, #ffffff 100%);
+    border: 1px solid #c2daff;
+}
+
+.coach-banner__icon {
+    --slds-c-icon-color-foreground-default: #0070d2;
+}
+
+.coach-banner__content {
+    flex: 1;
+    min-width: 0;
+}
+
+.coach-banner__actions {
+    flex-shrink: 0;
+}

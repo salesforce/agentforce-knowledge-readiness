@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Term__c</fullName>
+    <caseSensitive>false</caseSensitive>
+    <description>The jargon term or phrase to detect in articles.</description>
+    <externalId>true</externalId>
+    <inlineHelpText>Enter the jargon term or phrase (case-insensitive matching).</inlineHelpText>
+    <label>Term</label>
+    <length>255</length>
+    <required>true</required>
+    <trackTrending>false</trackTrending>
+    <type>Text</type>
+    <unique>true</unique>
+</CustomField>

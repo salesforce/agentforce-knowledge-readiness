@@ -1,0 +1,360 @@
+<template>
+    <div class="slds-box slds-theme_default">
+        <template lwc:if={hasAssessmentName}>
+            <p class="assessment-eyebrow slds-text-title_caps slds-text-color_weak slds-m-bottom_xx-small" data-id="assessment-eyebrow">{assessmentEyebrow}</p>
+        </template>
+        <h2 class="slds-text-heading_medium slds-m-bottom_medium">Select Knowledge Articles to Assess</h2>
+
+        <!-- Filter Bar -->
+        <div class="slds-grid slds-wrap slds-gutters_x-small slds-m-bottom_medium">
+            <div class="slds-col slds-size_1-of-2 slds-medium-size_1-of-5 slds-p-bottom_x-small">
+                <lightning-input
+                    type="search"
+                    label="Title Search"
+                    placeholder="Search by title..."
+                    value={titleSearch}
+                    onchange={handleTitleSearchChange}>
+                </lightning-input>
+            </div>
+            <div class="slds-col slds-size_1-of-2 slds-medium-size_1-of-5 slds-p-bottom_x-small">
+                <lightning-input
+                    type="search"
+                    label="Article Number"
+                    placeholder="Search by number..."
+                    value={articleNumber}
+                    onchange={handleArticleNumberChange}>
+                </lightning-input>
+            </div>
+            <template lwc:if={hasArticleTypeOptions}>
+                <div class="slds-col slds-size_1-of-2 slds-medium-size_1-of-5 slds-p-bottom_x-small">
+                    <lightning-combobox
+                        label="Article Type"
+                        value={articleType}
+                        options={articleTypeOptions}
+                        onchange={handleArticleTypeChange}>
+                    </lightning-combobox>
+                </div>
+            </template>
+            <div class="slds-col slds-size_1-of-1 slds-medium-size_1-of-5 slds-p-bottom_x-small">
+                <template lwc:if={hasActiveFilters}>
+                    <lightning-button
+                        class="filter-action-btn"
+                        label="Clear Filters"
+                        variant="base"
+                        icon-name="utility:clear"
+                        onclick={handleClearFilters}>
+                    </lightning-button>
+                </template>
+            </div>
+        </div>
+
+ <!-- Advanced Filter -->
+        <div class="slds-box slds-theme_shade slds-m-bottom_medium">
+            <h3 class="slds-text-title_caps slds-m-bottom_small">Advanced Filters</h3>
+
+            <!-- Add-clause row: field combobox → operator combobox → per-type
+                 value input → Add Filter button. Field combobox is sourced
+                 from the dynamic describe wire. -->
+            <div class="slds-grid slds-wrap slds-gutters_x-small slds-m-bottom_small slds-grid_vertical-align-end">
+                <div class="slds-col slds-size_1-of-1 slds-medium-size_1-of-5">
+                    <lightning-combobox
+                        label="Field"
+                        value={draftField}
+                        options={dslFieldOptions}
+                        placeholder="Pick a field..."
+                        onchange={handleDraftFieldChange}>
+                    </lightning-combobox>
+                </div>
+                <div class="slds-col slds-size_1-of-1 slds-medium-size_1-of-5">
+                    <lightning-combobox
+                        label="Operator"
+                        value={draftOperator}
+                        options={dslOperatorOptions}
+                        disabled={isNullOperatorDisabledByMissingField}
+                        placeholder="Pick an operator..."
+                        onchange={handleDraftOperatorChange}>
+                    </lightning-combobox>
+                </div>
+                <div class="slds-col slds-size_1-of-1 slds-medium-size_2-of-5">
+                    <!-- Per-type value input: rendered only when operator
+                         needs a value (null operators don't, list operators
+                         use a multi-select). -->
+                    <template lwc:if={isNullOperator}>
+                        <div class="slds-text-body_small slds-text-color_weak slds-p-top_medium">No value needed</div>
+                    </template>
+                    <template lwc:elseif={isListOperator}>
+                        <lightning-dual-listbox
+                            label="Values"
+                            options={draftPicklistOptions}
+                            value={draftValues}
+                            onchange={handleDraftValuesChange}>
+                        </lightning-dual-listbox>
+                    </template>
+                    <template lwc:elseif={isPicklistField}>
+                        <lightning-combobox
+                            label="Value"
+                            value={draftValue}
+                            options={draftPicklistOptions}
+                            onchange={handleDraftValueChange}>
+                        </lightning-combobox>
+                    </template>
+                    <template lwc:elseif={isLastNDays}>
+                        <lightning-input
+                            type="number"
+                            label="Days"
+                            placeholder="e.g. 30"
+                            value={draftValue}
+                            min="1"
+                            step="1"
+                            onchange={handleDraftValueChange}>
+                        </lightning-input>
+                    </template>
+                    <template lwc:elseif={isDateField}>
+                        <lightning-input
+                            type="date"
+                            label="Value"
+                            value={draftValue}
+                            onchange={handleDraftValueChange}>
+                        </lightning-input>
+                    </template>
+                    <template lwc:elseif={isNumberField}>
+                        <lightning-input
+                            type="number"
+                            label="Value"
+                            value={draftValue}
+                            onchange={handleDraftValueChange}>
+                        </lightning-input>
+                    </template>
+                    <template lwc:elseif={isBooleanField}>
+                        <lightning-combobox
+                            label="Value"
+                            value={draftValue}
+                            options={booleanValueOptions}
+                            onchange={handleDraftValueChange}>
+                        </lightning-combobox>
+                    </template>
+                    <template lwc:else>
+                        <lightning-input
+                            label="Value"
+                            value={draftValue}
+                            onchange={handleDraftValueChange}>
+                        </lightning-input>
+                    </template>
+                </div>
+                <div class="slds-col slds-size_1-of-1 slds-medium-size_1-of-5">
+                    <lightning-button
+                        label="Add Filter"
+                        icon-name="utility:add"
+                        disabled={addFilterDisabled}
+                        onclick={handleAddDslClause}>
+                    </lightning-button>
+                </div>
+            </div>
+
+            <!-- Numbered clause list — sits immediately above the filter-logic box so
+                 the 1..N badges map directly onto the formula references. -->
+            <template lwc:if={hasDslClauses}>
+                <div class="slds-m-bottom_small">
+                    <template for:each={numberedClauses} for:item="clause">
+                        <div key={clause.id} class="slds-grid slds-grid_align-spread slds-grid_vertical-align-center slds-m-bottom_xx-small slds-box slds-box_x-small slds-theme_default">
+                            <div class="slds-grid slds-grid_vertical-align-center">
+                                <lightning-badge label={clause.number} class="slds-m-right_x-small"></lightning-badge>
+                                <span class="slds-text-body_regular">{clause.summary}</span>
+                            </div>
+                            <lightning-button-icon
+                                icon-name="utility:close"
+                                alternative-text="Remove"
+                                variant="bare"
+                                class="clause-remove-btn"
+                                data-id={clause.id}
+                                size="small"
+                                onclick={handleRemoveDslClause}>
+                            </lightning-button-icon>
+                        </div>
+                    </template>
+                </div>
+            </template>
+
+ <!-- Formula input. Default is an implicit AND of clauses
+                 1..N; users override by typing e.g. `(1 OR 2) AND 3`. -->
+            <template lwc:if={hasDslClauses}>
+                <div class="slds-grid slds-wrap slds-gutters_x-small slds-m-bottom_small">
+                    <div class="slds-col slds-size_1-of-1 slds-medium-size_1-of-2">
+                        <lightning-input
+                            label="Filter Logic"
+                            placeholder={formulaPlaceholder}
+                            value={filterFormula}
+                            field-level-help="Combine clauses 1..N with AND, OR, NOT and parentheses, e.g. (1 OR 2) AND 3. Leave blank to AND all clauses together."
+                            message-when-bad-input={formulaError}
+                            onchange={handleFormulaChange}
+                            onkeyup={handleFormulaKeyup}>
+                        </lightning-input>
+                        <template lwc:if={formulaError}>
+                            <div class="slds-text-color_error slds-text-body_small slds-m-top_xx-small">
+                                {formulaError}
+                            </div>
+                        </template>
+                    </div>
+                    <div class="slds-col slds-size_1-of-1 slds-medium-size_1-of-4">
+                        <lightning-button
+                            class="filter-action-btn"
+                            label="Apply Filters"
+                            variant="brand"
+                            icon-name="utility:filter"
+                            disabled={applyFiltersDisabled}
+                            onclick={handleApplyFilters}>
+                        </lightning-button>
+                    </div>
+                </div>
+            </template>
+        </div>
+
+        <!-- Selection summary + count -->
+        <div class="slds-grid slds-grid_align-spread slds-m-bottom_medium">
+            <div>
+                <lightning-badge label={selectionLabel}></lightning-badge>
+                <template lwc:if={hasArticles}>
+                    <span class="slds-m-left_small slds-text-body_small slds-text-color_weak">{articleCountLabel}</span>
+                </template>
+            </div>
+            <lightning-button
+                label="Clear Selection"
+                onclick={handleClearSelection}
+                disabled={isSelectionEmpty}
+                variant="base">
+            </lightning-button>
+        </div>
+
+        <!-- Loading spinner -->
+        <template lwc:if={isLoading}>
+            <div class="slds-is-relative" style="min-height: 200px;">
+                <lightning-spinner alternative-text="Loading articles"></lightning-spinner>
+            </div>
+        </template>
+
+        <!-- Error message -->
+        <template lwc:if={error}>
+            <div class="slds-notify slds-notify_alert slds-alert_error" role="alert">
+                <span class="slds-assistive-text">error</span>
+                <h2>{error}</h2>
+            </div>
+        </template>
+
+        <!-- Select-all offer banner: visible whenever total count exceeds the loaded page (and is within the run cap) -->
+        <template lwc:if={showSelectAllOfferBanner}>
+            <div class="slds-notify slds-notify_alert slds-theme_info slds-m-bottom_x-small" role="status">
+                <span class="slds-assistive-text">info</span>
+                <lightning-button
+                    label={selectAllMatchingLinkLabel}
+                    variant="base"
+                    onclick={handleSelectAllMatching}>
+                </lightning-button>
+            </div>
+        </template>
+
+        <!-- Over-cap warning: the match set is larger than one run can cover -->
+        <template lwc:if={showOverCapBanner}>
+            <div class="slds-notify slds-notify_alert slds-theme_warning slds-m-bottom_x-small" role="alert">
+                <span class="slds-assistive-text">warning</span>
+                <lightning-icon icon-name="utility:warning" size="x-small" class="slds-m-right_x-small"></lightning-icon>
+                <span>{overCapBannerMessage}</span>
+            </div>
+        </template>
+
+        <!-- Select-all banner (matching-filter mode) -->
+        <template lwc:if={showAllMatchingBanner}>
+            <div class="slds-notify slds-notify_alert slds-theme_success slds-m-bottom_x-small" role="status">
+                <span class="slds-assistive-text">info</span>
+                <span>{allMatchingBannerMessage}</span>
+                <lightning-button
+                    class="slds-m-left_small"
+                    label="Clear selection"
+                    variant="base"
+                    onclick={handleClearMatching}>
+                </lightning-button>
+            </div>
+        </template>
+
+        <div class={selectorGridClass}>
+            <div class="selector-results">
+                <template lwc:if={hasArticles}>
+                    <c-kb-article-selector-datatable
+                        key-field="id"
+                        data={articles}
+                        columns={columns}
+                        selected-rows={effectiveSelectedRowIds}
+                        onrowselection={handleRowSelection}
+                        show-row-number-column>
+                    </c-kb-article-selector-datatable>
+
+                    <template lwc:if={hasMore}>
+                        <div class="slds-text-align_center slds-m-top_medium">
+                            <lightning-button
+                                label="Load More Articles"
+                                variant="neutral"
+                                icon-name="utility:chevrondown"
+                                onclick={handleLoadMore}>
+                            </lightning-button>
+                        </div>
+                    </template>
+                </template>
+
+                <template lwc:if={showNoArticles}>
+                    <div class="slds-illustration slds-illustration_small">
+                        <div class="slds-text-longform">
+                            <h3 class="slds-text-heading_medium">No Articles Found</h3>
+                            <p class="slds-text-body_regular">
+                                <template lwc:if={hasActiveFilters}>
+                                    No articles match your filters. Try adjusting or clearing your filters.
+                                </template>
+                                <template lwc:else>
+                                    No published Knowledge articles found. Make sure Knowledge is enabled and articles are published.
+                                </template>
+                            </p>
+                        </div>
+                    </div>
+                </template>
+            </div>
+
+ <!--: collapsible split-view separator. The toggle lives in the
+                 divider between the results and basket panes (standard
+                 Salesforce split-view pattern); collapsing reclaims horizontal
+                 space for the table. Keyboard-focusable button-icon with an
+                 aria-label + aria-expanded for screen-reader users. -->
+            <div class="selector-divider" role="separator" aria-orientation="vertical">
+                <lightning-button-icon
+                    class="basket-toggle-btn"
+                    icon-name={basketToggleIcon}
+                    variant="border-filled"
+                    size="small"
+                    alternative-text={basketToggleLabel}
+                    title={basketToggleLabel}
+                    aria-expanded={basketToggleAriaExpanded}
+                    aria-label={basketToggleLabel}
+                    onclick={handleToggleBasket}>
+                </lightning-button-icon>
+            </div>
+
+            <template lwc:if={isBasketExpanded}>
+                <aside class="basket-pane slds-box slds-theme_shade" aria-label="Selected articles">
+                    <h3 class="slds-text-title_caps slds-m-bottom_small">{selectedBasketLabel}</h3>
+                    <template lwc:if={hasBasketRows}>
+                        <lightning-datatable
+                            class="basket-table"
+                            key-field="id"
+                            data={basketRows}
+                            columns={basketColumns}
+                            hide-checkbox-column
+                            onrowaction={handleRemoveFromBasket}>
+                        </lightning-datatable>
+                    </template>
+                    <template lwc:else>
+                        <p class="slds-text-body_small slds-text-color_weak">
+                            {basketEmptyMessage}
+                        </p>
+                    </template>
+                </aside>
+            </template>
+        </div>
+    </div>
+</template>

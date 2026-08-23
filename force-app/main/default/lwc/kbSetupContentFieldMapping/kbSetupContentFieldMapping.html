@@ -1,0 +1,92 @@
+<template>
+    <div class="slds-m-top_medium">
+        <h3 class="slds-text-heading_small slds-m-bottom_x-small">Article Content Fields</h3>
+        <p class="slds-text-body_small slds-text-color_weak slds-m-bottom_small">
+            Select the Knowledge fields that contain article body content.
+            The assessment reads these fields when scoring articles and running the deduplication pipeline.
+            Standard identifying fields (Title, Article Number, Summary) are always included
+            automatically and aren't selectable here — just pick the fields that hold your
+            article body content.
+            If you select nothing, scoring falls back to the standard <strong>Summary</strong> field only —
+            there is no smart multi-field discovery. Articles whose substance lives in other fields will
+            then score as if those fields were empty, so select every field that holds real article content.
+        </p>
+
+        <template lwc:if={isLoading}>
+            <lightning-spinner alternative-text="Loading fields..." size="small"></lightning-spinner>
+        </template>
+
+        <template lwc:if={hasError}>
+            <div class="slds-text-color_error slds-text-body_small">{error}</div>
+        </template>
+
+        <template lwc:if={hasFields}>
+            <!-- Long Text / Rich Text group -->
+            <template lwc:if={hasTextAreaFields}>
+                <div class="field-group slds-m-bottom_small">
+                    <h4 class="group-header slds-text-body_small slds-text-title_bold slds-m-bottom_xx-small">
+                        Long Text / Rich Text Fields
+                    </h4>
+                    <div class="field-list slds-box slds-p-around_small">
+                        <template for:each={textAreaFields} for:item="field">
+                            <div key={field.value} class="slds-m-bottom_xx-small">
+                                <lightning-input
+                                    type="checkbox"
+                                    label={field.label}
+                                    checked={field.checked}
+                                    data-value={field.value}
+                                    onchange={handleFieldToggle}>
+                                </lightning-input>
+                            </div>
+                        </template>
+                    </div>
+                </div>
+            </template>
+
+            <!-- Short Text group -->
+            <template lwc:if={hasShortTextFields}>
+                <div class="field-group slds-m-bottom_small">
+                    <h4 class="group-header slds-text-body_small slds-text-title_bold slds-m-bottom_xx-small">
+                        Short Text Fields
+                        <span class="group-note slds-m-left_x-small">useful for Environment, Version, Product etc.</span>
+                    </h4>
+                    <div class="field-list slds-box slds-p-around_small">
+                        <template for:each={shortTextFields} for:item="field">
+                            <div key={field.value} class="slds-m-bottom_xx-small">
+                                <lightning-input
+                                    type="checkbox"
+                                    label={field.label}
+                                    checked={field.checked}
+                                    data-value={field.value}
+                                    onchange={handleFieldToggle}>
+                                </lightning-input>
+                            </div>
+                        </template>
+                    </div>
+                </div>
+            </template>
+
+            <template lwc:if={hasSelection}>
+                <div class="slds-text-body_small slds-text-color_weak slds-m-top_x-small">
+                    {selectionSummary}
+                </div>
+            </template>
+            <template lwc:else>
+                <div class="slds-box slds-box_x-small slds-theme_warning slds-m-top_x-small" role="alert">
+                    <p class="slds-text-body_small">
+                        <lightning-icon icon-name="utility:warning" size="xx-small" class="slds-m-right_xx-small" aria-hidden="true"></lightning-icon>
+                        <strong>No fields selected.</strong> Scoring and deduplication will read
+                        the standard <strong>Summary</strong> field only. Select the fields that hold your
+                        article content to avoid misleadingly low scores.
+                    </p>
+                </div>
+            </template>
+        </template>
+
+        <template lwc:if={isEmpty}>
+            <div class="slds-text-body_small slds-text-color_weak slds-m-top_x-small">
+                No text or rich text fields found on Knowledge__kav.
+            </div>
+        </template>
+    </div>
+</template>

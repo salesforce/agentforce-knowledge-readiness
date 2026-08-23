@@ -1,0 +1,14 @@
+.conflict-card {
+ /* accent border (graphic)— bright amber, distinct from red. */
+    border-left: 4px solid #fe9339;
+}
+
+.slds-badge_error {
+    background-color: #c23934;
+    color: #fff;
+}
+
+.slds-badge_warning {
+    background-color: #fe9339;
+    color: #080707;
+}

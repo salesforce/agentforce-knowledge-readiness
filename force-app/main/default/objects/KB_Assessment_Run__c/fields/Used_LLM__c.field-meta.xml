@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Used_LLM__c</fullName>
+    <defaultValue>false</defaultValue>
+    <description>Indicates whether Einstein LLM was used for hybrid scoring in this run.</description>
+    <externalId>false</externalId>
+    <inlineHelpText>True if this assessment used LLM-enhanced scoring.</inlineHelpText>
+    <label>Used LLM</label>
+    <trackTrending>false</trackTrending>
+    <type>Checkbox</type>
+</CustomField>

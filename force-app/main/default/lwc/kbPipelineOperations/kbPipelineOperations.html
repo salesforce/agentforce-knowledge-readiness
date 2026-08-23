@@ -1,0 +1,33 @@
+<template>
+    <template lwc:if={isSetupLoading}>
+        <div class="slds-align_absolute-center slds-p-around_large">
+            <lightning-spinner alternative-text="Loading..."></lightning-spinner>
+        </div>
+    </template>
+    <template lwc:elseif={isSetupComplete}>
+    <lightning-card title="Pipeline Operations" icon-name="utility:flow">
+        <div class="slds-p-around_medium">
+            <template lwc:if={error}>
+                <div class="slds-text-color_error slds-m-bottom_medium">{error}</div>
+            </template>
+
+            <template lwc:if={hasRuns}>
+                <lightning-datatable
+                    key-field="runId"
+                    data={runs}
+                    columns={columns}
+                    hide-checkbox-column>
+                </lightning-datatable>
+            </template>
+            <template lwc:else>
+                <div class="slds-text-body_regular slds-text-color_weak">
+                    No pipeline runs found yet.
+                </div>
+            </template>
+        </div>
+    </lightning-card>
+    </template>
+    <template lwc:else>
+        <c-setup-required-guard ongotosetup={handleGoToSetup}></c-setup-required-guard>
+    </template>
+</template>
