@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <GenAiPromptTemplate xmlns="http://soap.sforce.com/2006/04/metadata">
-    <activeVersionIdentifier>dIRBZxdJBYVmvmwv4/3DkrD7prMYAANFTVuvFEZTzUI=_7</activeVersionIdentifier>
+    <activeVersionIdentifier>dIRBZxdJBYVmvmwv4/3DkrD7prMYAANFTVuvFEZTzUI=_8</activeVersionIdentifier>
     <developerName>Evaluate_Clarity</developerName>
     <masterLabel>Evaluate_Clarity</masterLabel>
     <overridable>false</overridable>
@@ -18,20 +18,25 @@ Article Summary:
 Article Content (HTML stripped — clarity is about language, not markup):
 {!$Input:Content}
 
-Evaluate, weighing each item in context — do NOT apply rules mechanically (passive voice is fine for policy/legal content; long sentences with parallel structure can be clearer than three short ambiguous ones; jargon is acceptable when it matches how customers ask):
+Article Language (locale code, e.g. en_US, fr, de, es):
+{!$Input:Language}
 
-1. Pronoun and reference clarity. Flag pronouns (&quot;it&quot;, &quot;this&quot;, &quot;that&quot;) whose referents the agent would lose when retrieving a passage in isolation.
+LANGUAGE DIRECTIVE: The article is written in the language above. Write ALL human-readable output — every &quot;text&quot;, every entry in &quot;strengths&quot;, and &quot;reasoning&quot; — in that same language. Judge grammar, pronoun/reference clarity, register, and style against THAT language's conventions, not English. Applying English-specific rules to a non-English article is an error. (Exception: the &quot;impact&quot; enum values stay in English — see Output requirements.)
 
-2. Jargon and acronyms. Flag terms an agent would struggle to bridge to customer phrasing — internal codenames, unexplained acronyms, specialised vocabulary the customer wouldn't use. Acceptable if the article expands them (&quot;customer success score (CSS)&quot;) or pairs them with the customer-facing equivalent.
+Evaluate, weighing each item in context — do NOT apply rules mechanically (passive/impersonal forms are fine for policy/legal content and are the neutral register in many languages; long sentences with parallel structure can be clearer than three short ambiguous ones; jargon is acceptable when it matches how customers ask):
 
-3. Sentence complexity. Flag sentences that obscure their actor or action — heavy passive that hides who does what, deeply nested clauses that lose the subject. Long-but-clear sentences are fine.
+1. Pronoun and reference clarity. Flag pronouns or referring expressions (in the article's language) whose referents the agent would lose when retrieving a passage in isolation.
 
-4. Genre fit. Policy/legal/regulatory writing has a different baseline (passive, longer sentences, formal register) than how-to/troubleshooting (imperative, short, active). Score against the genre, not a universal style.
+2. Jargon and acronyms. Flag terms an agent would struggle to bridge to customer phrasing — internal codenames, unexplained acronyms, specialised vocabulary the customer wouldn't use. Acceptable if the article expands them on first use (e.g. an acronym paired with its full form) or pairs them with the customer-facing equivalent.
+
+3. Sentence complexity. Flag sentences that obscure their actor or action — constructions that hide who does what, deeply nested clauses that lose the subject. Long-but-clear sentences are fine. Assess against the neutral register for this genre in the article's language.
+
+4. Genre fit. Policy/legal/regulatory writing has a different baseline (more formal register, longer sentences) than how-to/troubleshooting (direct, short, action-oriented) — as those registers are realised in the article's language. Score against the genre, not a universal style.
 
 5. Internal contradictions WITHIN this single article. Flag statements that contradict each other — two passages giving conflicting instructions, values, prerequisites, or outcomes for the same task. Examples: one section says &quot;To reset your password, click Settings&quot; while another says &quot;Password resets must be requested from your admin&quot;; or &quot;the trial lasts 14 days&quot; in the intro and &quot;your 30-day trial&quot; later. This is a same-article check only — do not compare against other articles. For each contradiction, name BOTH conflicting passages in the &quot;text&quot;. Where one is clearly authoritative, write remediation language that reconciles them; otherwise recommend the author keep a single statement. Do NOT flag complementary detail, clearly-scoped exceptions (&quot;normally X, but for enterprise accounts Y&quot;), or restatements that agree.
 
 For EVERY clarity issue, also judge:
-- &quot;impact&quot;: how much fixing it improves the article. One of &quot;High&quot;, &quot;Medium&quot;, &quot;Low&quot;. Let impact reflect the score deduction — an issue that drags the score down a lot is High impact (fixing it recovers the most points).
+- &quot;impact&quot;: how much fixing it improves the article. MUST be exactly one of the English tokens &quot;High&quot;, &quot;Medium&quot;, &quot;Low&quot; — do NOT translate or localise this value even when the rest of your output is in another language (it is parsed as a fixed enum). Let impact reflect the score deduction — an issue that drags the score down a lot is High impact (fixing it recovers the most points).
 
 ORDER the items in &quot;clarityIssues&quot; from highest impact at the TOP to lowest at the BOTTOM. Items the author should fix first must come first in the array. Lower-impact &quot;nice to have&quot; observations come last.
 
@@ -75,10 +80,17 @@ Scoring guide: 90-100 = customer-friendly language, references resolve in isolat
             <referenceName>Input:Summary</referenceName>
             <required>false</required>
         </inputs>
+        <inputs>
+            <apiName>Language</apiName>
+            <definition>primitive://String</definition>
+            <masterLabel>Language</masterLabel>
+            <referenceName>Input:Language</referenceName>
+            <required>false</required>
+        </inputs>
         <isCitationEnabled>false</isCitationEnabled>
         <primaryModel>sfdc_ai__DefaultGPT54</primaryModel>
         <status>Published</status>
-        <versionIdentifier>dIRBZxdJBYVmvmwv4/3DkrD7prMYAANFTVuvFEZTzUI=_7</versionIdentifier>
+        <versionIdentifier>dIRBZxdJBYVmvmwv4/3DkrD7prMYAANFTVuvFEZTzUI=_8</versionIdentifier>
     </templateVersions>
     <type>einstein_gpt__flex</type>
     <visibility>Global</visibility>

@@ -17,22 +17,9 @@
 @IsTest
 public class MockPromptTemplateService extends PromptTemplateService {
 
-    public PromptTemplateService.DraftEvaluationResult mockDraftResult;
     public PromptTemplateService.AnomalyEvaluationResult mockAnomalyResult;
     public Boolean throwException = false;
-    public Integer draftCallCount = 0;
     public Integer anomalyCallCount = 0;
-
-    public override PromptTemplateService.DraftEvaluationResult evaluateDraft(
-        String draftText,
-        List<VectorSearchResult> similarArticles
-    ) {
-        draftCallCount++;
-        if (throwException) {
-            throw new KnowledgeAIException('Mock LLM error');
-        }
-        return mockDraftResult;
-    }
 
     public override PromptTemplateService.AnomalyEvaluationResult evaluatePublishedPair(
         String articleAText,
@@ -64,39 +51,59 @@ public class MockPromptTemplateService extends PromptTemplateService {
         return r;
     }
 
-    // Captured arguments from the most recent evaluateStructure call so tests
- // can assert Title + Summary were wired through as their own inputs.
+    // Captured Title + Summary from the most recent structure / clarity call so
+    // tests can assert they were wired through as their own dedicated inputs.
     public String lastStructureTitle;
     public String lastStructureSummary;
-
-    public override PromptTemplateService.LLMEvaluationResult evaluateStructure(String title, String content, String summary) {
-        structureCallCount++;
-        lastStructureTitle = title;
-        lastStructureSummary = summary;
-        if (throwException) { throw new KnowledgeAIException('Mock structure error'); }
-        return getDefaultMockLLMResult();
-    }
-
-    // Captured arguments from the most recent evaluateClarity call so tests
-    // can assert Title/Summary were wired through.
+    public String lastStructureLanguage;
     public String lastClarityTitle;
     public String lastClaritySummary;
+    // Input:Content captured per dimension so tests can assert the strip-vs-raw
+    // invariant: Structure receives RAW markup, Clarity/Completeness receive
+    // single-stripped plain text (guards against the double-strip regression).
+    public String lastStructureContent;
+    public String lastClarityContent;
+    public String lastCompletenessContent;
+    public String lastClarityLanguage;
+    public String lastCompletenessLanguage;
 
-    public override PromptTemplateService.LLMEvaluationResult evaluateClarity(
-        String title,
-        String content,
-        String summary
+    // Single seam override — the real evaluateStructure/Clarity/Completeness
+    // delegators route here, as does KBScorerBase.enhanceWithLLM directly. We
+    // branch on templateApiName to bump the per-dimension counters and capture
+    // the Title/Summary inputs the scorer assembled into the map.
+    public override PromptTemplateService.LLMEvaluationResult evaluateArticle(
+        String templateApiName,
+        Map<String, String> inputs,
+        String evaluationType
     ) {
-        clarityCallCount++;
-        lastClarityTitle = title;
-        lastClaritySummary = summary;
-        if (throwException) { throw new KnowledgeAIException('Mock clarity error'); }
-        return getDefaultMockLLMResult();
-    }
+        String title = inputs == null ? null : inputs.get('Input:Title');
+        String summary = inputs == null ? null : inputs.get('Input:Summary');
+        String content = inputs == null ? null : inputs.get('Input:Content');
+        String language = inputs == null ? null : inputs.get('Input:Language');
 
-    public override PromptTemplateService.LLMEvaluationResult evaluateCompleteness(String title, String structuredContent, String summary) {
-        completenessCallCount++;
-        if (throwException) { throw new KnowledgeAIException('Mock completeness error'); }
+        if (templateApiName == 'Evaluate_Structure') {
+            structureCallCount++;
+            lastStructureTitle = title;
+            lastStructureSummary = summary;
+            lastStructureContent = content;
+            lastStructureLanguage = language;
+            if (throwException) { throw new KnowledgeAIException('Mock structure error'); }
+        } else if (templateApiName == 'Evaluate_Clarity') {
+            clarityCallCount++;
+            lastClarityTitle = title;
+            lastClaritySummary = summary;
+            lastClarityContent = content;
+            lastClarityLanguage = language;
+            if (throwException) { throw new KnowledgeAIException('Mock clarity error'); }
+        } else if (templateApiName == 'Evaluate_Completeness') {
+            completenessCallCount++;
+            lastCompletenessContent = content;
+            lastCompletenessLanguage = language;
+            if (throwException) { throw new KnowledgeAIException('Mock completeness error'); }
+        } else if (throwException) {
+            throw new KnowledgeAIException('Mock evaluation error');
+        }
+
         return getDefaultMockLLMResult();
     }
 

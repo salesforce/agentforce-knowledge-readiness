@@ -53,19 +53,6 @@ export default class KbSetupPipelineConfig extends LightningElement {
         this._config = value ? { ...value } : { ...DEFAULTS };
     }
 
-    // Pre-publish check top-K. This value belongs to a DIFFERENT config object
-    // (KB_Vector_Search_Config__c.Max_Results__c), not KB_Pipeline_Config__c, so
-    // it is owned by the parent and threaded in as a plain @api value. We render
-    // it here as a subsection because conceptually it IS duplicate detection (the
-    // single-article draft scan), but edits go out on a SEPARATE event so the
-    // parent routes them to the vector save path — the pipeline config is never
-    // mixed with vector state. showPrepublish gates the whole subsection; it is
-    // only true in the redesigned wizard when the KB_PrePublishCheck_Beta perm is
-    // held (the legacy admin wizard leaves it false → subsection hidden).
-    @api prepublishTopK;
-    @api showPrepublish = false;
-    @api helpPrepublishTopK;
-
     get maxFinalists() { return this._config.maxFinalists ?? DEFAULTS.maxFinalists; }
     get tier2TopK() { return this._config.tier2TopK ?? DEFAULTS.tier2TopK; }
     get tier2SimilarityThreshold() {
@@ -81,18 +68,6 @@ export default class KbSetupPipelineConfig extends LightningElement {
         }
         this._config = { ...this._config, [field]: value };
         this.dispatchEvent(new CustomEvent('configchange', { detail: this._config }));
-    }
-
-    // Separate event — the parent persists this via saveVectorConfiguration, not
-    // the pipeline save. Kept distinct from handleChange's configchange so the
-    // two config objects never cross-contaminate.
-    handlePrepublishChange(event) {
-        const parsed = parseInt(event.target.value, 10);
-        this.dispatchEvent(
-            new CustomEvent('prepublishtopkchange', {
-                detail: Number.isNaN(parsed) ? null : parsed
-            })
-        );
     }
 
     handleResetDefaults() {

@@ -15,10 +15,9 @@
  * limitations under the License.
  */
 /**
- * Coverage for KBSetupPreflightService. Surfaces 5 postflight checks on
+ * Coverage for KBSetupPreflightService. Surfaces 4 postflight checks on
  * Step 5 (Final Validation) of the wizard: dataCloudAvailable,
- * searchIndexConfigured, contentFieldsSelected, knowledgeArticlesExist,
- * bypassPermissionExists.
+ * searchIndexConfigured, contentFieldsSelected, knowledgeArticlesExist.
  *
  * Tests run runChecks() in several configuration scenarios so the
  * conditional branches (search-index configured, content fields selected,
@@ -38,8 +37,8 @@ private class KBSetupPreflightServiceTest {
         List<Map<String, Object>> checks = KBSetupPreflightService.runChecks();
         Test.stopTest();
 
-        Assert.areEqual(5, checks.size(),
-            'Five documented checks; the count is stable so this catches accidental drops');
+        Assert.areEqual(4, checks.size(),
+            'Four documented checks; the count is stable so this catches accidental drops');
 
         // Every entry has the documented shape.
         for (Map<String, Object> c : checks) {
@@ -58,7 +57,6 @@ private class KBSetupPreflightServiceTest {
         Assert.isTrue(keys.contains('searchIndexConfigured'));
         Assert.isTrue(keys.contains('contentFieldsSelected'));
         Assert.isTrue(keys.contains('knowledgeArticlesExist'));
-        Assert.isTrue(keys.contains('bypassPermissionExists'));
     }
 
     @IsTest

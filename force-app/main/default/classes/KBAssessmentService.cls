@@ -19,7 +19,7 @@ public with sharing class KBAssessmentService {
     // Fields already in the base KAV SELECT clause. Used to deduplicate
     // content-field additions and avoid "duplicate field selected" SOQL errors.
     private static final Set<String> BASE_KAV_QUERY_FIELDS = new Set<String>{
-        'id', 'title', 'articlenumber', 'knowledgearticleid', 'summary', 'urlname', 'lastmodifieddate', 'publishstatus'
+        'id', 'title', 'articlenumber', 'knowledgearticleid', 'summary', 'urlname', 'lastmodifieddate', 'publishstatus', 'language'
     };
 
     private KBScoringService scoringService;
@@ -1026,7 +1026,15 @@ public with sharing class KBAssessmentService {
         ArticleProjection proj = new ArticleProjection();
         proj.contentFields = getContentFields(objectName);
 
-        String selectClause = 'Id, Title, ArticleNumber, KnowledgeArticleId, Summary, UrlName, LastModifiedDate, PublishStatus';
+        // Language MUST be in the SELECT: ArticleWrapper reads it via
+        // getPopulatedFieldsAsMap, and it drives Input:Language on the scoring
+        // prompt templates. Omit it and every article reads back null →
+        // PromptTemplateService defaults Input:Language to 'en_US' → non-English
+        // articles get flagged with a spurious "language mislabeled as en_US"
+        // issue (the LLM detects the real content language from the body and
+        // contradicts the locale we told it). BASE_KAV_QUERY_FIELDS lists
+        // Language for dedup purposes but does not build this clause.
+        String selectClause = 'Id, Title, ArticleNumber, KnowledgeArticleId, Summary, UrlName, LastModifiedDate, PublishStatus, Language';
         for (String field : proj.contentFields) {
             if (!BASE_KAV_QUERY_FIELDS.contains(field.toLowerCase())) {
                 selectClause += ', ' + field;
@@ -1236,14 +1244,15 @@ public with sharing class KBAssessmentService {
         String status = String.isNotBlank(runtimeFilters.publishStatus)
             ? runtimeFilters.publishStatus
             : 'Online';
-        String language = String.isNotBlank(runtimeFilters.language)
-            ? runtimeFilters.language
-            : 'en_US';
+        // Blank language = all languages (no Language predicate).
+        String language = runtimeFilters.language;
 
         String query = 'SELECT ' + proj.selectClause
             + ' FROM ' + knowledgeObjectName
-            + ' WHERE PublishStatus = \'' + String.escapeSingleQuotes(status) + '\''
-            + ' AND Language = \'' + String.escapeSingleQuotes(language) + '\'';
+            + ' WHERE PublishStatus = \'' + String.escapeSingleQuotes(status) + '\'';
+        if (String.isNotBlank(language)) {
+            query += ' AND Language = \'' + String.escapeSingleQuotes(language) + '\'';
+        }
 
         if (String.isNotBlank(searchTerm)) {
             String searchPattern = '%' + String.escapeSingleQuotes(searchTerm) + '%';
@@ -1315,6 +1324,26 @@ public with sharing class KBAssessmentService {
         List<KBAssessmentModels.FilterClause> filterClauses, String filterLogic,
         String filterFormula
     ) {
+        return searchArticlesFiltered(
+            publishStatus, titleSearch, articleNumber, articleType,
+            pageSize, offset, filterClauses, filterLogic, filterFormula, null
+        );
+    }
+
+    /**
+     * Data-category-aware overload. `dataCategoryFilters` maps a data-category
+     * group API name (e.g. 'group1') to the selected category names under it
+     * (e.g. ['Networking','Security']); it compiles to a native
+     * `WITH DATA CATEGORY grp__c BELOW (cat__c, …)` clause (OR within a group,
+     * AND across groups). Category/group names are whitelisted against the org
+     * describe tree before use, so nothing reaches the SOQL unvalidated.
+     */
+    public KBAssessmentModels.ArticleFilterResult searchArticlesFiltered(
+        String publishStatus, String titleSearch, String articleNumber,
+        String articleType, Integer pageSize, Integer offset,
+        List<KBAssessmentModels.FilterClause> filterClauses, String filterLogic,
+        String filterFormula, Map<String, List<String>> dataCategoryFilters
+    ) {
         KBAssessmentModels.ArticleFilterResult result = new KBAssessmentModels.ArticleFilterResult();
 
         String knowledgeObjectName = resolveKnowledgeObjectName(articleType);
@@ -1329,7 +1358,8 @@ public with sharing class KBAssessmentService {
         Integer safeOffset = (offset != null && offset >= 0 && offset <= 2000) ? offset : 0;
 
         String baseWhere = buildBaseWhere(
-            publishStatus, titleSearch, articleNumber, filterClauses, filterLogic, filterFormula
+            publishStatus, titleSearch, articleNumber, filterClauses, filterLogic,
+            filterFormula, dataCategoryFilters
         );
 
         // System mode (default) on purpose for both queries below — same
@@ -1400,6 +1430,23 @@ public with sharing class KBAssessmentService {
         String articleType, List<KBAssessmentModels.FilterClause> filterClauses,
         String filterLogic, String filterFormula
     ) {
+        return resolveMatchingArticleIds(
+            publishStatus, titleSearch, articleNumber, articleType,
+            filterClauses, filterLogic, filterFormula, null
+        );
+    }
+
+    /**
+     * Data-category-aware overload of resolveMatchingArticleIds — see the
+     * matching searchArticlesFiltered overload for the `dataCategoryFilters`
+     * contract.
+     */
+    public List<String> resolveMatchingArticleIds(
+        String publishStatus, String titleSearch, String articleNumber,
+        String articleType, List<KBAssessmentModels.FilterClause> filterClauses,
+        String filterLogic, String filterFormula,
+        Map<String, List<String>> dataCategoryFilters
+    ) {
         List<String> ids = new List<String>();
 
         String knowledgeObjectName = resolveKnowledgeObjectName(articleType);
@@ -1408,7 +1455,8 @@ public with sharing class KBAssessmentService {
         }
 
         String baseWhere = buildBaseWhere(
-            publishStatus, titleSearch, articleNumber, filterClauses, filterLogic, filterFormula
+            publishStatus, titleSearch, articleNumber, filterClauses, filterLogic,
+            filterFormula, dataCategoryFilters
         );
 
         // System mode (default) on purpose for both queries below: even though
@@ -1477,21 +1525,44 @@ public with sharing class KBAssessmentService {
         List<KBAssessmentModels.FilterClause> filterClauses, String filterLogic,
         String filterFormula
     ) {
+        return buildBaseWhere(
+            publishStatus, titleSearch, articleNumber, filterClauses, filterLogic, filterFormula, null
+        );
+    }
+
+    private String buildBaseWhere(
+        String publishStatus, String titleSearch, String articleNumber,
+        List<KBAssessmentModels.FilterClause> filterClauses, String filterLogic,
+        String filterFormula, Map<String, List<String>> dataCategoryFilters
+    ) {
         this.formulaFallbackApplied = false;
+        // The WITH DATA CATEGORY clause (if any) is appended after the entire
+        // WHERE (all predicates) and before ORDER BY — so it rides at the tail
+        // of every return path below.
+        String catClause = buildDataCategoryClause(dataCategoryFilters);
         KBRuntimeConfigService.RuntimeFilters runtimeFilters = KBRuntimeConfigService.getRuntimeFilters();
         // 'All' is a sentinel meaning no PublishStatus filter — used when the UI needs to
         // show articles of any status (e.g. pre-selecting a Draft article from a record page).
         String status = String.isNotBlank(publishStatus)
             ? publishStatus
             : (String.isNotBlank(runtimeFilters.publishStatus) ? runtimeFilters.publishStatus : 'Online');
-        String language = String.isNotBlank(runtimeFilters.language)
-            ? runtimeFilters.language
-            : 'en_US';
+        // Blank language = all languages (no Language predicate).
+        String language = runtimeFilters.language;
 
-        String baseWhere = status == 'All'
-            ? ' WHERE Language = \'' + String.escapeSingleQuotes(language) + '\''
-            : ' WHERE PublishStatus = \'' + String.escapeSingleQuotes(status) + '\''
-              + ' AND Language = \'' + String.escapeSingleQuotes(language) + '\'';
+        // Build the leading predicates as a list so an omitted PublishStatus
+        // ('All' sentinel) and/or an omitted Language both compose correctly.
+        // baseWhere always begins with a valid WHERE so downstream ' AND …'
+        // clauses (title/articleNumber/DSL/formula) stay well-formed.
+        List<String> basePredicates = new List<String>();
+        if (status != 'All') {
+            basePredicates.add('PublishStatus = \'' + String.escapeSingleQuotes(status) + '\'');
+        }
+        if (String.isNotBlank(language)) {
+            basePredicates.add('Language = \'' + String.escapeSingleQuotes(language) + '\'');
+        }
+        String baseWhere = basePredicates.isEmpty()
+            ? ' WHERE Id != null'
+            : ' WHERE ' + String.join(basePredicates, ' AND ');
 
         if (String.isNotBlank(titleSearch)) {
             String searchPattern = '%' + String.escapeSingleQuotes(titleSearch) + '%';
@@ -1512,7 +1583,7 @@ public with sharing class KBAssessmentService {
             String formulaWhere = buildFormulaWhereClause(filterClauses, filterFormula);
             if (String.isNotBlank(formulaWhere)) {
                 baseWhere += formulaWhere;
-                return baseWhere;
+                return baseWhere + catClause;
             }
             // A formula was supplied but didn't compile to a usable clause —
             // we're about to fall through to the legacy AND/OR path, which
@@ -1521,7 +1592,7 @@ public with sharing class KBAssessmentService {
         }
 
         baseWhere += buildDslWhereClause(filterClauses, filterLogic);
-        return baseWhere;
+        return baseWhere + catClause;
     }
 
     /**
@@ -1594,12 +1665,13 @@ public with sharing class KBAssessmentService {
         String status = String.isNotBlank(runtimeFilters.publishStatus)
             ? runtimeFilters.publishStatus
             : 'Online';
-        String language = String.isNotBlank(runtimeFilters.language)
-            ? runtimeFilters.language
-            : 'en_US';
+        // Blank language = all languages (no Language predicate).
+        String language = runtimeFilters.language;
         String query = 'SELECT COUNT() FROM ' + objectName
-            + ' WHERE PublishStatus = \'' + String.escapeSingleQuotes(status) + '\''
-            + ' AND Language = \'' + String.escapeSingleQuotes(language) + '\'';
+            + ' WHERE PublishStatus = \'' + String.escapeSingleQuotes(status) + '\'';
+        if (String.isNotBlank(language)) {
+            query += ' AND Language = \'' + String.escapeSingleQuotes(language) + '\'';
+        }
         // System mode (default) on purpose: this is an org-wide count of the
         // published KB used for sizing/dashboards. USER_MODE would narrow it to
         // the running user's data-category-visible slice, understating the true
@@ -1687,6 +1759,350 @@ public with sharing class KBAssessmentService {
                 'getDataCategoryCounts: Knowledge__DataCategorySelection query failed: ' + e.getMessage());
         }
         return counts;
+    }
+
+    // ──────────────────────────────────────────────────────────────────────
+    // Data-category filter (advanced-filter UI)
+    // ──────────────────────────────────────────────────────────────────────
+
+    // The SObject key the Knowledge data-category describe APIs expect.
+    private static final String KAV_CATEGORY_SOBJECT = 'KnowledgeArticleVersion';
+
+    /** One data-category group as an accordion drawer for the selector. */
+    public class DataCategoryGroupDTO {
+        @AuraEnabled public String name;                          // group API name, e.g. 'group1'
+        @AuraEnabled public String label;                         // group display label
+        @AuraEnabled public List<DataCategoryNodeDTO> categories; // top-level in-use nodes
+    }
+
+    /** One category node in the tree. `count` is the number of distinct
+     *  Online articles tagged directly at this category. */
+    public class DataCategoryNodeDTO {
+        @AuraEnabled public String name;                        // category API name (no __c)
+        @AuraEnabled public String label;                       // category display label
+        @AuraEnabled public Integer count;                      // direct in-use article count
+        @AuraEnabled public List<DataCategoryNodeDTO> children; // nested categories
+    }
+
+    /**
+     * Returns the in-use data-category tree per group for the article selector's
+     * accordion drawers. "In-use" = at least one Online article is tagged at the
+     * node or one of its descendants; nodes whose whole subtree is untagged are
+     * pruned so the picklist only surfaces categories that can actually match.
+     * The mandatory single root (typically "All") is hoisted away so the group
+     * drawer shows real categories at its top level.
+     */
+    public static List<DataCategoryGroupDTO> getArticleDataCategories() {
+        List<DataCategoryGroupDTO> out = new List<DataCategoryGroupDTO>();
+
+        List<Schema.DescribeDataCategoryGroupResult> groups;
+        try {
+            groups = Schema.describeDataCategoryGroups(new List<String>{ KAV_CATEGORY_SOBJECT });
+        } catch (Exception e) {
+            // No Knowledge / no category groups configured — feature no-ops.
+            return out;
+        }
+        if (groups == null || groups.isEmpty()) {
+            return out;
+        }
+
+        Map<String, Map<String, Set<Id>>> usage = tallyCategoryUsage();
+
+        List<Schema.DataCategoryGroupSobjectTypePair> pairs =
+            new List<Schema.DataCategoryGroupSobjectTypePair>();
+        for (Schema.DescribeDataCategoryGroupResult g : groups) {
+            Schema.DataCategoryGroupSobjectTypePair pair =
+                new Schema.DataCategoryGroupSobjectTypePair();
+            pair.setSobject(KAV_CATEGORY_SOBJECT);
+            pair.setDataCategoryGroupName(g.getName());
+            pairs.add(pair);
+        }
+
+        List<Schema.DescribeDataCategoryGroupStructureResult> structures;
+        try {
+            structures = Schema.describeDataCategoryGroupStructures(pairs, false);
+        } catch (Exception e) {
+            return out;
+        }
+
+        for (Schema.DescribeDataCategoryGroupStructureResult s : structures) {
+            String groupName = s.getName();
+            Map<String, Set<Id>> groupUsage = usage.containsKey(groupName)
+                ? usage.get(groupName)
+                : new Map<String, Set<Id>>();
+
+            List<DataCategoryNodeDTO> topNodes = new List<DataCategoryNodeDTO>();
+            for (Schema.DataCategory top : s.getTopCategories()) {
+                DataCategoryNodeDTO node = buildCategoryNode(top, groupUsage);
+                if (node != null) {
+                    topNodes.add(node);
+                }
+            }
+
+            // Hoist the mandatory single root (e.g. "All") when it carries no
+            // direct tags of its own, so the drawer shows the real categories.
+            if (topNodes.size() == 1
+                && topNodes[0].count == 0
+                && topNodes[0].children != null
+                && !topNodes[0].children.isEmpty()) {
+                topNodes = topNodes[0].children;
+            }
+
+            if (topNodes.isEmpty()) {
+                continue; // no in-use categories in this group → hide the drawer
+            }
+
+            DataCategoryGroupDTO gd = new DataCategoryGroupDTO();
+            gd.name = groupName;
+            gd.label = s.getLabel();
+            gd.categories = topNodes;
+            out.add(gd);
+        }
+        return out;
+    }
+
+    /** Recursively builds a category node, pruning subtrees with zero in-use. */
+    private static DataCategoryNodeDTO buildCategoryNode(
+        Schema.DataCategory cat, Map<String, Set<Id>> groupUsage
+    ) {
+        List<DataCategoryNodeDTO> childNodes = new List<DataCategoryNodeDTO>();
+        if (cat.getChildCategories() != null) {
+            for (Schema.DataCategory child : cat.getChildCategories()) {
+                DataCategoryNodeDTO cn = buildCategoryNode(child, groupUsage);
+                if (cn != null) {
+                    childNodes.add(cn);
+                }
+            }
+        }
+        Integer directCount = groupUsage.containsKey(cat.getName())
+            ? groupUsage.get(cat.getName()).size()
+            : 0;
+        // Prune a node only when it is untagged AND every descendant pruned out.
+        if (directCount == 0 && childNodes.isEmpty()) {
+            return null;
+        }
+        DataCategoryNodeDTO node = new DataCategoryNodeDTO();
+        node.name = cat.getName();
+        node.label = cat.getLabel();
+        node.count = directCount;
+        node.children = childNodes;
+        return node;
+    }
+
+    /**
+     * Tallies distinct Online-article tags per (group, category). GROUP BY is
+     * not allowed on Knowledge__DataCategorySelection fields, so the count is
+     * done in Apex. Scoped to Online KAV ids (bounded by matchingFilterCap) so
+     * draft/archived versions don't inflate the counts and the junction query
+     * stays within row limits.
+     */
+    // Chunk size for the Knowledge__DataCategorySelection tally. Kept
+    // conservative because we can hit ~6 selections per article; at
+    // matchingFilterCap = 10k articles a single query would return
+    // ~60k rows and trip the 50k-row SOQL cursor cap. 500 parent ids per
+    // chunk * ~6 selections = ~3k rows per chunk, well under the ceiling.
+    @TestVisible private static final Integer TALLY_CHUNK_SIZE = 500;
+
+    private static Map<String, Map<String, Set<Id>>> tallyCategoryUsage() {
+        Map<String, Map<String, Set<Id>>> usage = new Map<String, Map<String, Set<Id>>>();
+        if (!Schema.getGlobalDescribe().containsKey('Knowledge__DataCategorySelection')) {
+            return usage;
+        }
+        String objectName = getKnowledgeObjectApiNameStatic();
+        if (String.isBlank(objectName)) {
+            return usage;
+        }
+        List<Id> onlineIds = new List<Id>();
+        try {
+            String idQuery = 'SELECT Id FROM ' + objectName
+                + ' WHERE PublishStatus = \'Online\' LIMIT ' + matchingFilterCap;
+            for (SObject a : Database.query(idQuery)) {
+                onlineIds.add((Id) a.get('Id'));
+            }
+        } catch (Exception e) {
+            // Failure to list Online article ids is a hard error worth
+            // surfacing — the drawer would otherwise render empty and the
+            // user couldn't distinguish "no articles" from "the query blew
+            // up". Rethrow so the AuraHandledException wraps a real message.
+            throw new QueryException(
+                'Failed to list Online articles for category tally: ' + e.getMessage());
+        }
+        if (onlineIds.isEmpty()) {
+            return usage;
+        }
+        // Chunked so we stay under the 50k-row SOQL cursor cap on orgs with
+        // many article×category assignments. Each chunk is a separate SOQL
+        // but the total rows returned across the loop stays bounded by
+        // matchingFilterCap × avg-selections-per-article (a few hundred k
+        // in extreme cases, but consumed row-by-row into an in-memory map).
+        Integer chunksTried = 0;
+        Integer chunksFailed = 0;
+        Exception lastFailure;
+        // Cumulative row-count guard. The 50 000-rows-per-transaction SOQL
+        // limit is CUMULATIVE across queries, not per-query, and the
+        // "Too many query rows" LimitException it throws is uncatchable —
+        // the per-chunk try/catch below cannot recover from it. So we STOP
+        // enumerating chunks once we approach the cap, log a WARN, and
+        // return the partial map we've built so far. Chunking still buys us
+        // the ability to *observe* how close we're getting — the old single
+        // query blew past this silently.
+        final Integer ROW_BUDGET = 40000;  // headroom below the 50k limit
+        Integer approxRowsSeen = 0;
+        for (Integer start = 0; start < onlineIds.size(); start += TALLY_CHUNK_SIZE) {
+            Integer endIdx = Math.min(start + TALLY_CHUNK_SIZE, onlineIds.size());
+            if (approxRowsSeen >= ROW_BUDGET) {
+                System.debug(LoggingLevel.WARN,
+                    'tallyCategoryUsage: cumulative row budget (' + ROW_BUDGET
+                    + ') reached after ' + start + '/' + onlineIds.size()
+                    + ' parent ids — returning partial map to avoid the uncatchable '
+                    + '"Too many query rows" LimitException.');
+                break;
+            }
+            List<Id> chunk = new List<Id>();
+            for (Integer i = start; i < endIdx; i++) chunk.add(onlineIds[i]);
+            chunksTried++;
+            try {
+                String selQuery = 'SELECT ParentId, DataCategoryGroupName, DataCategoryName '
+                    + 'FROM Knowledge__DataCategorySelection WHERE ParentId IN :chunk';
+                for (SObject sel : Database.query(selQuery)) {
+                    String g = (String) sel.get('DataCategoryGroupName');
+                    String c = (String) sel.get('DataCategoryName');
+                    Id pid = (Id) sel.get('ParentId');
+                    if (!usage.containsKey(g)) {
+                        usage.put(g, new Map<String, Set<Id>>());
+                    }
+                    Map<String, Set<Id>> byCat = usage.get(g);
+                    if (!byCat.containsKey(c)) {
+                        byCat.put(c, new Set<Id>());
+                    }
+                    byCat.get(c).add(pid);
+                    approxRowsSeen++;
+                }
+            } catch (Exception e) {
+                chunksFailed++;
+                lastFailure = e;
+                System.debug(LoggingLevel.WARN,
+                    'tallyCategoryUsage chunk ' + start + '..' + endIdx
+                    + ' failed: ' + e.getMessage());
+            }
+        }
+        // If every chunk failed we have no data at all — surface an error
+        // rather than silently return empty. Partial failure (some chunks
+        // succeeded) returns the partial map with a WARN log; the drawer
+        // shows the categories we DID see, which is better than blank.
+        if (chunksTried > 0 && chunksFailed == chunksTried) {
+            throw new QueryException(
+                'Category tally failed across all ' + chunksTried
+                + ' chunks: ' + (lastFailure == null ? 'unknown' : lastFailure.getMessage()));
+        }
+        return usage;
+    }
+
+    /**
+     * Compiles the selector's data-category selections into a native
+     * `WITH DATA CATEGORY` fragment (leading space included, blank if nothing
+     * selects). Semantics: `grp__c BELOW cat__c` (the category and its
+     * descendants), OR across categories within a group, AND across groups.
+     * Group and category names are whitelisted against the org describe tree
+     * before they touch the SOQL, so the fragment is injection-safe.
+     */
+    @TestVisible
+    private String buildDataCategoryClause(Map<String, List<String>> selections) {
+        if (selections == null || selections.isEmpty()) {
+            return '';
+        }
+        Map<String, Set<String>> validNames = describeCategoryNamesByGroup();
+        if (validNames.isEmpty()) {
+            return '';
+        }
+
+        List<String> groupFragments = new List<String>();
+        List<String> groupNames = new List<String>(selections.keySet());
+        groupNames.sort();
+        for (String groupName : groupNames) {
+            if (groupName == null || !validNames.containsKey(groupName)) {
+                continue;
+            }
+            Set<String> allowed = validNames.get(groupName);
+            List<String> selected = selections.get(groupName);
+            if (selected == null || selected.isEmpty()) {
+                continue;
+            }
+            List<String> catTokens = new List<String>();
+            Set<String> seen = new Set<String>();
+            for (String raw : selected) {
+                if (raw == null) {
+                    continue;
+                }
+                String name = raw.trim();
+                if (allowed.contains(name) && !seen.contains(name)) {
+                    seen.add(name);
+                    catTokens.add(name + '__c');
+                }
+            }
+            if (catTokens.isEmpty()) {
+                continue;
+            }
+            catTokens.sort();
+            String catExpr = catTokens.size() == 1
+                ? catTokens[0]
+                : '(' + String.join(catTokens, ', ') + ')';
+            groupFragments.add(groupName + '__c BELOW ' + catExpr);
+        }
+        if (groupFragments.isEmpty()) {
+            return '';
+        }
+        return ' WITH DATA CATEGORY ' + String.join(groupFragments, ' AND ');
+    }
+
+    /** Every category name (recursively) per group, from the describe tree —
+     *  the whitelist buildDataCategoryClause validates client input against. */
+    private Map<String, Set<String>> describeCategoryNamesByGroup() {
+        Map<String, Set<String>> out = new Map<String, Set<String>>();
+        List<Schema.DescribeDataCategoryGroupResult> groups;
+        try {
+            groups = Schema.describeDataCategoryGroups(new List<String>{ KAV_CATEGORY_SOBJECT });
+        } catch (Exception e) {
+            return out;
+        }
+        if (groups == null || groups.isEmpty()) {
+            return out;
+        }
+        List<Schema.DataCategoryGroupSobjectTypePair> pairs =
+            new List<Schema.DataCategoryGroupSobjectTypePair>();
+        for (Schema.DescribeDataCategoryGroupResult g : groups) {
+            Schema.DataCategoryGroupSobjectTypePair pair =
+                new Schema.DataCategoryGroupSobjectTypePair();
+            pair.setSobject(KAV_CATEGORY_SOBJECT);
+            pair.setDataCategoryGroupName(g.getName());
+            pairs.add(pair);
+        }
+        List<Schema.DescribeDataCategoryGroupStructureResult> structures;
+        try {
+            structures = Schema.describeDataCategoryGroupStructures(pairs, false);
+        } catch (Exception e) {
+            return out;
+        }
+        for (Schema.DescribeDataCategoryGroupStructureResult s : structures) {
+            Set<String> names = new Set<String>();
+            for (Schema.DataCategory top : s.getTopCategories()) {
+                collectCategoryNames(top, names);
+            }
+            out.put(s.getName(), names);
+        }
+        return out;
+    }
+
+    private void collectCategoryNames(Schema.DataCategory cat, Set<String> names) {
+        if (cat == null) {
+            return;
+        }
+        names.add(cat.getName());
+        if (cat.getChildCategories() != null) {
+            for (Schema.DataCategory child : cat.getChildCategories()) {
+                collectCategoryNames(child, names);
+            }
+        }
     }
 
     public List<KB_Assessment_Run__c> getRecentAssessmentRuns(Integer limitCount) {

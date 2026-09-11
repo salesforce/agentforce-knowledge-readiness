@@ -280,6 +280,135 @@ private class Tier1VectorSearchQueueableTest {
     }
 
     // ──────────────────────────────────────────────────────────────────────
+    // Cross-language / same-master pair filter (Layer A of the translation-
+    // aware dedup guards). Exercises the pure filter directly with in-memory
+    // Knowledge__kav rows so Language and KnowledgeArticleId can be forced
+    // without depending on org-level translation settings.
+    //
+    // KnowledgeArticleId is a read-only system field on Knowledge__kav — it
+    // cannot be set through the SObject constructor. JSON.deserialize is the
+    // standard Apex escape hatch: field-writability checks are enforced by
+    // the setter path, not by the deserializer.
+    // ──────────────────────────────────────────────────────────────────────
+
+    private static Knowledge__kav fakeKav(Id versionId, String knowledgeArticleId, String language) {
+        // Local var deliberately NOT named `json` — that shadows the system
+        // JSON class and turns JSON.deserialize(...) into String.deserialize(...).
+        String payload = '{'
+            + '"attributes":{"type":"Knowledge__kav"},'
+            + '"Id":"' + versionId + '",'
+            + '"KnowledgeArticleId":"' + knowledgeArticleId + '",'
+            + '"Language":"' + language + '"'
+            + '}';
+        return (Knowledge__kav) JSON.deserialize(payload, Knowledge__kav.class);
+    }
+
+    @IsTest
+    static void testApplyPairFilter_CrossLanguagePair_Dropped() {
+        List<Id> ids = setupArticleIds(2);
+
+        Map<Id, Knowledge__kav> articleMap = new Map<Id, Knowledge__kav>{
+            ids[0] => fakeKav(ids[0], 'ka-a', 'en_US'),
+            ids[1] => fakeKav(ids[1], 'ka-b', 'fr')
+        };
+        Map<Id, List<Id>> candidatesByTarget = new Map<Id, List<Id>>{
+            ids[0] => new List<Id>{ ids[1] }
+        };
+
+        Tier1VectorSearchQueueable.applyPairFilter(candidatesByTarget, articleMap);
+
+        Assert.areEqual(0, candidatesByTarget.size(),
+            'A cross-language pair is dropped and its now-empty target key is removed');
+    }
+
+    @IsTest
+    static void testApplyPairFilter_SameMasterPair_Dropped() {
+        List<Id> ids = setupArticleIds(2);
+
+        // Two KAV rows sharing a KnowledgeArticleId — translations of the same
+        // master article, or a straggler prior version. Language matches so this
+        // isolates the same-master guard from the cross-language guard.
+        Map<Id, Knowledge__kav> articleMap = new Map<Id, Knowledge__kav>{
+            ids[0] => fakeKav(ids[0], 'ka-shared', 'en_US'),
+            ids[1] => fakeKav(ids[1], 'ka-shared', 'en_US')
+        };
+        Map<Id, List<Id>> candidatesByTarget = new Map<Id, List<Id>>{
+            ids[0] => new List<Id>{ ids[1] }
+        };
+
+        Tier1VectorSearchQueueable.applyPairFilter(candidatesByTarget, articleMap);
+
+        Assert.areEqual(0, candidatesByTarget.size(),
+            'A same-master pair is dropped even when Language matches');
+    }
+
+    @IsTest
+    static void testApplyPairFilter_SameLanguageDifferentMaster_Kept() {
+        List<Id> ids = setupArticleIds(2);
+
+        Map<Id, Knowledge__kav> articleMap = new Map<Id, Knowledge__kav>{
+            ids[0] => fakeKav(ids[0], 'ka-a', 'en_US'),
+            ids[1] => fakeKav(ids[1], 'ka-b', 'en_US')
+        };
+        Map<Id, List<Id>> candidatesByTarget = new Map<Id, List<Id>>{
+            ids[0] => new List<Id>{ ids[1] }
+        };
+
+        Tier1VectorSearchQueueable.applyPairFilter(candidatesByTarget, articleMap);
+
+        Assert.areEqual(1, candidatesByTarget.size(),
+            'A same-language, different-master pair is preserved');
+        Assert.areEqual(1, candidatesByTarget.get(ids[0]).size(),
+            'The one candidate survives the filter');
+    }
+
+    @IsTest
+    static void testApplyPairFilter_MixedCandidates_KeepsOnlyValid() {
+        List<Id> ids = setupArticleIds(4);
+
+        // Target A pairs with three candidates: one same-language different-master (kept),
+        // one cross-language (dropped), and one same-master (dropped).
+        Map<Id, Knowledge__kav> articleMap = new Map<Id, Knowledge__kav>{
+            ids[0] => fakeKav(ids[0], 'ka-a', 'en_US'),
+            ids[1] => fakeKav(ids[1], 'ka-b', 'en_US'),
+            ids[2] => fakeKav(ids[2], 'ka-c', 'fr'),
+            ids[3] => fakeKav(ids[3], 'ka-a', 'en_US')
+        };
+        Map<Id, List<Id>> candidatesByTarget = new Map<Id, List<Id>>{
+            ids[0] => new List<Id>{ ids[1], ids[2], ids[3] }
+        };
+
+        Tier1VectorSearchQueueable.applyPairFilter(candidatesByTarget, articleMap);
+
+        Assert.areEqual(1, candidatesByTarget.size(), 'Target retained (kept a valid candidate)');
+        Assert.areEqual(1, candidatesByTarget.get(ids[0]).size(),
+            'Only the same-language, different-master candidate survives');
+        Assert.areEqual(ids[1], candidatesByTarget.get(ids[0])[0],
+            'The surviving candidate is the ka-b/en_US one');
+    }
+
+    @IsTest
+    static void testApplyPairFilter_MissingArticleMapEntry_TreatedAsUnknownAndDropped() {
+        List<Id> ids = setupArticleIds(2);
+
+        // Candidate ids[1] is not in articleMap (deleted / access lost between the
+        // vector-search callout and the follow-up SOQL). The filter must drop the
+        // pair rather than assume equality — a downstream Tier 3 call would fail
+        // anyway when it can't load the row.
+        Map<Id, Knowledge__kav> articleMap = new Map<Id, Knowledge__kav>{
+            ids[0] => fakeKav(ids[0], 'ka-a', 'en_US')
+        };
+        Map<Id, List<Id>> candidatesByTarget = new Map<Id, List<Id>>{
+            ids[0] => new List<Id>{ ids[1] }
+        };
+
+        Tier1VectorSearchQueueable.applyPairFilter(candidatesByTarget, articleMap);
+
+        Assert.areEqual(0, candidatesByTarget.size(),
+            'Unresolved candidate → pair dropped defensively');
+    }
+
+    // ──────────────────────────────────────────────────────────────────────
     // ArticleCandidates DTO
     // ──────────────────────────────────────────────────────────────────────
 

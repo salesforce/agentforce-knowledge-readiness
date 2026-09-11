@@ -20,18 +20,18 @@ private class PromptTemplateServiceTest {
     @IsTest
     static void testMockInjection() {
         MockPromptTemplateService mock = new MockPromptTemplateService();
-        mock.mockDraftResult = new PromptTemplateService.DraftEvaluationResult();
-        mock.mockDraftResult.hasConflict = false;
+        mock.mockAnomalyResult = new PromptTemplateService.AnomalyEvaluationResult();
+        mock.mockAnomalyResult.isAnomaly = false;
 
         PromptTemplateService.setMock(mock);
 
         PromptTemplateService service = PromptTemplateService.getInstance();
-        PromptTemplateService.DraftEvaluationResult result = service.evaluateDraft(
-            'Test text', new List<VectorSearchResult>()
+        PromptTemplateService.AnomalyEvaluationResult result = service.evaluatePublishedPair(
+            'Article A text', 'Article B text', 'idA', 'idB'
         );
 
-        System.assertEquals(false, result.hasConflict, 'Mock should return clean result');
-        System.assertEquals(1, mock.draftCallCount, 'Draft should be called once');
+        System.assertEquals(false, result.isAnomaly, 'Mock should return the injected result');
+        System.assertEquals(1, mock.anomalyCallCount, 'Injected mock should be called once');
     }
 
     @IsTest
@@ -64,19 +64,11 @@ private class PromptTemplateServiceTest {
         PromptTemplateService service = PromptTemplateService.getInstance();
 
         try {
-            service.evaluateDraft('Test', new List<VectorSearchResult>());
+            service.evaluatePublishedPair('Test A', 'Test B', 'idA', 'idB');
             System.assert(false, 'Should have thrown exception');
         } catch (KnowledgeAIException e) {
             System.assert(e.getMessage().contains('Mock LLM error'));
         }
-    }
-
-    @IsTest
-    static void testDraftEvaluationResultDefaults() {
-        PromptTemplateService.DraftEvaluationResult result = new PromptTemplateService.DraftEvaluationResult();
-        System.assertEquals(false, result.hasConflict, 'Default should be no conflict');
-        System.assertNotEquals(null, result.conflicts, 'Conflicts list should be initialized');
-        System.assertEquals(0, result.conflicts.size(), 'Conflicts should be empty');
     }
 
     @IsTest
@@ -179,8 +171,6 @@ private class PromptTemplateServiceTest {
             'Draft_Merged_Knowledge_Article keeps default temperature');
         Assert.isFalse(PromptTemplateService.isScoringTemplate('Fix_Article_Issues_V2'),
             'Fix_Article_Issues_V2 keeps default temperature');
-        Assert.isFalse(PromptTemplateService.isScoringTemplate('Draft_Evaluator'),
-            'Draft_Evaluator keeps default temperature');
         Assert.isFalse(PromptTemplateService.isScoringTemplate('Triage_Duplicate_Candidates'),
             'Triage_Duplicate_Candidates keeps default temperature');
         Assert.isFalse(PromptTemplateService.isScoringTemplate('Extract_Article_Facts'),
@@ -239,51 +229,6 @@ private class PromptTemplateServiceTest {
     // call the @TestVisible parsers directly on a freshly-constructed
     // service — no mock needed, no ConnectApi round-trip.
     // ──────────────────────────────────────────────────────────────────────
-
-    @IsTest
-    static void testParseDraftEvaluationResult_HappyPathWithConflicts() {
-        PromptTemplateService svc = new PromptTemplateService();
-        String json = '{'
-            + '"hasConflict":true,'
-            + '"conflicts":['
-            +   '{"articleId":"ka01","articleTitle":"Old Article","type":"Contradiction","reasoning":"Different procedure"},'
-            +   '{"articleId":"ka02","articleTitle":"Other","type":"Overlap","reasoning":"Same scope"}'
-            + ']}';
-
-        PromptTemplateService.DraftEvaluationResult result = svc.parseDraftEvaluationResult(json);
-
-        Assert.isTrue(result.hasConflict, 'hasConflict surfaced');
-        Assert.areEqual(2, result.conflicts.size(), 'Both conflicts parsed');
-        Assert.areEqual('ka01', result.conflicts[0].conflictingArticleId);
-        Assert.areEqual('Old Article', result.conflicts[0].conflictingArticleTitle);
-        Assert.areEqual('Contradiction', result.conflicts[0].conflictType);
-        Assert.areEqual('Different procedure', result.conflicts[0].reasoning);
-    }
-
-    @IsTest
-    static void testParseDraftEvaluationResult_EmptyConflictsArray() {
-        PromptTemplateService svc = new PromptTemplateService();
-        PromptTemplateService.DraftEvaluationResult result =
-            svc.parseDraftEvaluationResult('{"hasConflict":false,"conflicts":[]}');
-
-        Assert.isFalse(result.hasConflict);
-        Assert.areEqual(0, result.conflicts.size(), 'Empty conflicts list');
-    }
-
-    @IsTest
-    static void testParseDraftEvaluationResult_MalformedThrows() {
-        PromptTemplateService svc = new PromptTemplateService();
-
-        Boolean threw = false;
-        try {
-            svc.parseDraftEvaluationResult('{not-valid');
-        } catch (KnowledgeAIException e) {
-            threw = true;
-            Assert.isTrue(e.getMessage().contains('Failed to parse draft'),
-                'Wrapped error references draft parser');
-        }
-        Assert.isTrue(threw, 'Malformed JSON throws KnowledgeAIException');
-    }
 
     @IsTest
     static void testParseAnomalyEvaluationResult_HappyPath() {
@@ -702,7 +647,7 @@ private class PromptTemplateServiceTest {
         PromptTemplateService svc = new PromptTemplateService();
 
         Test.startTest();
-        PromptTemplateService.LLMEvaluationResult r = svc.evaluateStructure('Title', 'Content', 'Summary');
+        PromptTemplateService.LLMEvaluationResult r = svc.evaluateStructure('Title', 'Content', 'Summary', 'fr');
         Test.stopTest();
 
         Assert.isNotNull(r.errorMessage, 'Errors swallowed into errorMessage');
@@ -715,7 +660,7 @@ private class PromptTemplateServiceTest {
         PromptTemplateService svc = new PromptTemplateService();
 
         Test.startTest();
-        PromptTemplateService.LLMEvaluationResult r = svc.evaluateClarity('Title', 'Content', 'Summary');
+        PromptTemplateService.LLMEvaluationResult r = svc.evaluateClarity('Title', 'Content', 'Summary', 'fr');
         Test.stopTest();
 
         Assert.isTrue(r.errorMessage.contains('Clarity evaluation failed'));
@@ -1015,7 +960,7 @@ private class PromptTemplateServiceTest {
 
         Test.startTest();
         PromptTemplateService.LLMEvaluationResult result =
-            svc.evaluateStructure('Title text', 'Content text', 'Summary text');
+            svc.evaluateStructure('Title text', 'Content text', 'Summary text', 'de');
         Test.stopTest();
 
         Assert.isNotNull(result, 'Wrapper returns a result, never null');
@@ -1034,7 +979,7 @@ private class PromptTemplateServiceTest {
 
         Test.startTest();
         PromptTemplateService.LLMEvaluationResult result =
-            svc.evaluateClarity('Title text', 'Some article body content for the LLM.', 'Summary text');
+            svc.evaluateClarity('Title text', 'Some article body content for the LLM.', 'Summary text', 'es');
         Test.stopTest();
 
         Assert.isNotNull(result.errorMessage);
@@ -1049,7 +994,7 @@ private class PromptTemplateServiceTest {
 
         Test.startTest();
         PromptTemplateService.LLMEvaluationResult result =
-            svc.evaluateCompleteness('Title', 'Body', 'Summary');
+            svc.evaluateCompleteness('Title', 'Body', 'Summary', 'fr');
         Test.stopTest();
 
         Assert.isNotNull(result.errorMessage,
@@ -1066,31 +1011,11 @@ private class PromptTemplateServiceTest {
 
         Test.startTest();
         PromptTemplateService.LLMEvaluationResult result =
-            svc.evaluateCompleteness('Title', 'Body', null);
+            svc.evaluateCompleteness('Title', 'Body', null, null);
         Test.stopTest();
 
         Assert.isNotNull(result.errorMessage,
             'Null summary still routed through the wrapper safely');
-    }
-
-    @IsTest
-    static void testEvaluateDraft_RealServiceThrowsOnEinsteinUnavailable() {
-        PromptTemplateService.setMock(null);
-        PromptTemplateService svc = PromptTemplateService.getInstance();
-
-        Boolean threw = false;
-        Test.startTest();
-        try {
-            svc.evaluateDraft('Draft text', new List<VectorSearchResult>());
-        } catch (KnowledgeAIException e) {
-            threw = true;
-            Assert.isTrue(e.getMessage().contains('Draft_Evaluator')
-                || e.getMessage().contains('Prompt template'),
-                'Error wraps the failing template name');
-        }
-        Test.stopTest();
-
-        Assert.isTrue(threw, 'evaluateDraft rethrows when LLM is unreachable');
     }
 
     @IsTest

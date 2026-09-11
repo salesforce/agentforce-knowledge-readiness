@@ -320,4 +320,34 @@ private class KBClarityScorerTest {
         Assert.isNull(result.issueAnalyses[0].impact,
             'Severity null when LLM did not emit it (legacy shape)');
     }
+
+    /**
+     * Guards the single-strip invariant. The base llmContent() seam is the sole
+     * owner of HTML stripping; the scorer must pass RAW content so the body is
+     * stripped exactly once. stripHtml is NOT idempotent on entity-encoded
+     * markup — '&lt;config&gt;' decodes to '<config>' on the first pass, and a
+     * second pass would delete it as if it were a real tag. A correctly
+     * single-stripped body therefore still contains the decoded '<config>'.
+     */
+    @IsTest
+    static void testContentStrippedExactlyOnce() {
+        MockPromptTemplateService mock = new MockPromptTemplateService();
+        PromptTemplateService.LLMEvaluationResult llm = new PromptTemplateService.LLMEvaluationResult();
+        llm.score = 80;
+        llm.success = true;
+        mock.mockLLMResult = llm;
+        PromptTemplateService.setMock(mock);
+
+        KBClarityScorer scorer = new KBClarityScorer();
+
+        Test.startTest();
+        scorer.scoreClarity('<p>Use the &lt;config&gt; element to enable it.</p>', 'Config guide');
+        Test.stopTest();
+
+        Assert.areEqual(1, mock.clarityCallCount, 'LLM called once');
+        Assert.isTrue(
+            mock.lastClarityContent != null && mock.lastClarityContent.contains('<config>'),
+            'Content must be stripped exactly once: the decoded <config> survives a single ' +
+            'strip but a double strip deletes it as a tag. Got: [' + mock.lastClarityContent + ']');
+    }
 }

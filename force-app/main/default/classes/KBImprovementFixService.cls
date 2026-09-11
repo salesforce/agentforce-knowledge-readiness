@@ -170,7 +170,7 @@ public with sharing class KBImprovementFixService {
             Map<String, Integer> fieldLimits   = buildFieldLimits(contentFields);
             String issuesList    = buildIssuesList(issueDescriptions);
             String strengthsList = buildStrengthsList(lockedRecIds);
-            String language      = String.isNotBlank(article.Language) ? article.Language : 'en';
+            String language      = resolveLanguageDirective(article.Language);
 
             // 5. Call Fix_Article_Issues prompt — LLM rewrites all fields in one pass.
             //    Strengths from the same article assessment are passed alongside issues so
@@ -390,6 +390,32 @@ public with sharing class KBImprovementFixService {
             }
         }
         return limits;
+    }
+
+    /**
+     * The `Language` input for Fix_Article_Issues_V2. A directive written in
+     * the article's own language is a far stronger anchor than a bare ISO code
+     * ("pl") or an English label ("Polish") — empirically it keeps the rewrite
+     * in-language even when the issue/strength lists reaching the model are in
+     * English (a short article dense with English brand names/acronyms flipped
+     * to English ~50-75% of the time on a bare code, 0% with the directive).
+     *
+     * Sourced from the KB_Localized_Prompt_Text__mdt catalog so new languages
+     * are a metadata add, not a code change. Falls back to the English record
+     * (which names the target language via {LANG}) for unseeded languages, and
+     * to a hardcoded English directive if the catalog isn't deployed at all —
+     * so a fix never fails for lack of a directive row.
+     */
+    @TestVisible
+    private static String resolveLanguageDirective(String articleLanguage) {
+        String langCode = String.isNotBlank(articleLanguage) ? articleLanguage : 'en';
+        String directive = KBLocalizedText.get('FIX_LANGUAGE_DIRECTIVE', langCode);
+        if (String.isBlank(directive)) {
+            directive = 'Source article language code: ' + langCode
+                + '. Write EVERY rewritten field value in this language. Do NOT translate the content'
+                + ' into English or any other language.';
+        }
+        return directive;
     }
 
     private static String buildIssuesList(List<String> issues) {

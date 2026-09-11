@@ -1326,6 +1326,20 @@ public with sharing class KBAssessmentController {
         }
     }
 
+    /**
+     * In-use data-category tree per group for the selector's category drawers.
+     * cacheable — the describe structure + in-use tally are stable within a
+     * session; the LWC @wires it once.
+     */
+    @AuraEnabled(cacheable=true)
+    public static List<KBAssessmentService.DataCategoryGroupDTO> getArticleDataCategories() {
+        try {
+            return KBAssessmentService.getArticleDataCategories();
+        } catch (Exception e) {
+            throw new AuraHandledException('Error loading data categories: ' + e.getMessage());
+        }
+    }
+
     @AuraEnabled(cacheable=true)
     public static KBAssessmentModels.ArticleFilterResult getFilteredArticles(String filterJSON) {
         try {
@@ -1345,7 +1359,8 @@ public with sharing class KBAssessmentController {
                 offset,
                 extractFilterClauses(filters),
                 (String) filters.get('filterLogic'),
-                (String) filters.get('filterFormula')
+                (String) filters.get('filterFormula'),
+                extractDataCategoryFilters(filters)
             );
         } catch (Exception e) {
             throw new AuraHandledException('Error fetching filtered articles: ' + e.getMessage());
@@ -1364,7 +1379,8 @@ public with sharing class KBAssessmentController {
                 (String) filters.get('articleType'),
                 extractFilterClauses(filters),
                 (String) filters.get('filterLogic'),
-                (String) filters.get('filterFormula')
+                (String) filters.get('filterFormula'),
+                extractDataCategoryFilters(filters)
             );
         } catch (KBAssessmentService.MatchingFilterLimitException e) {
             throw new AuraHandledException(e.getMessage());
@@ -1377,6 +1393,39 @@ public with sharing class KBAssessmentController {
         return String.isNotBlank(filterJSON)
             ? (Map<String, Object>) JSON.deserializeUntyped(filterJSON)
             : new Map<String, Object>();
+    }
+
+    /**
+     * Parses the optional `dataCategoryFilters` object from the filter JSON:
+     *   { "group1": ["Networking","Security"], "group2": ["EMEA"] }
+     * into a group→category-names map. Names are validated downstream in
+     * KBAssessmentService against the describe tree, so this only shapes the
+     * payload — it does not trust it. Returns null when absent so callers pass
+     * null through (no WITH DATA CATEGORY clause).
+     */
+    private static Map<String, List<String>> extractDataCategoryFilters(Map<String, Object> filters) {
+        if (filters == null
+            || !filters.containsKey('dataCategoryFilters')
+            || !(filters.get('dataCategoryFilters') instanceof Map<String, Object>)) {
+            return null;
+        }
+        Map<String, Object> raw = (Map<String, Object>) filters.get('dataCategoryFilters');
+        Map<String, List<String>> result = new Map<String, List<String>>();
+        for (String groupName : raw.keySet()) {
+            if (!(raw.get(groupName) instanceof List<Object>)) {
+                continue;
+            }
+            List<String> names = new List<String>();
+            for (Object v : (List<Object>) raw.get(groupName)) {
+                if (v != null) {
+                    names.add(String.valueOf(v));
+                }
+            }
+            if (!names.isEmpty()) {
+                result.put(groupName, names);
+            }
+        }
+        return result.isEmpty() ? null : result;
     }
 
     private static List<KBAssessmentModels.FilterClause> extractFilterClauses(Map<String, Object> filters) {

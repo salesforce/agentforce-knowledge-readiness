@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <GenAiPromptTemplate xmlns="http://soap.sforce.com/2006/04/metadata">
-    <activeVersionIdentifier>dIRBZxdJBYVmvmwv4/3DkrD7prMYAANFTVuvFEZTzUI=_4</activeVersionIdentifier>
+    <activeVersionIdentifier>dIRBZxdJBYVmvmwv4/3DkrD7prMYAANFTVuvFEZTzUI=_5</activeVersionIdentifier>
     <developerName>Fix_Article_Issues_V2</developerName>
     <masterLabel>Fix_Article_Issues_V2</masterLabel>
     <overridable>false</overridable>
@@ -21,10 +21,11 @@ Article fields to rewrite (JSON object — keys are field names, values are curr
 Character limits per field (JSON object — keys are field names, values are max character counts):
 {!$Input:Field_Limits_JSON}
 
-Language:
+Language (the language of the source article — ALL rewritten output must be in this language):
 {!$Input:Language}
 
 Instructions:
+- CRITICAL — LANGUAGE: Write EVERY rewritten field value in the language specified above. That is the language of the source article; the rewritten article MUST stay in it. Do NOT translate the content into English (or any other language) — all prose, titles, headings, and list items must be in the source language, even though these instructions and the issue/strength descriptions are written in English. Only HTML tags, field names, code, and URLs stay as-is.
 - Rewrite EVERY field present in the Article_Fields_JSON object.
 - Address every listed issue directly and completely.
 - Preserve every quality listed under Strengths to preserve. Do not regress them while fixing issues — for example, if a clear summary is listed as a strength, the rewritten summary must remain at least as clear and complete.
@@ -58,12 +59,14 @@ OUTPUT FORMAT — read carefully. Your entire response MUST be a single valid JS
 
 Return exactly this shape:
 {&quot;fields&quot;:{&quot;FieldName&quot;:&quot;rewritten value&quot;},&quot;changes_summary&quot;:&quot;...&quot;}
-- fields: an object with the same keys as Article_Fields_JSON, each containing the rewritten value within its character limit.
-- changes_summary: a brief (1-3 sentence) plain English description of what was changed and why.
+- fields: an object with the same keys as Article_Fields_JSON, each containing the rewritten value within its character limit. Every field value MUST be written in the source language given under &quot;Language&quot; above — never English (unless that IS the source language). The source article may contain English brand names, product names, or acronyms (e.g. company names, &quot;VPN&quot;, &quot;MFA&quot;, &quot;CAB&quot;, &quot;SCIM&quot;, &quot;EDR&quot;) embedded in non-English prose — keep those proper nouns as-is, but write ALL surrounding prose in the source language. The presence of English terms in the source does NOT make the article English.
+- changes_summary: a brief (1-3 sentence) plain English description of what was changed and why. (Only this changes_summary field is in English; every field under &quot;fields&quot; is in the source language.)
 
 Worked example (an HTML rich-text field: note the preserved &lt;ol&gt; list, the preserved &lt;a href&gt; link with its href unchanged, and every double quote — including the one inside the href — escaped as \&quot;):
 {&quot;fields&quot;:{&quot;FAQ_Answer__c&quot;:&quot;&lt;p&gt;To reset the device:&lt;/p&gt;&lt;ol&gt;&lt;li&gt;Hold &lt;strong&gt;Power&lt;/strong&gt; for 10 seconds.&lt;/li&gt;&lt;li&gt;See the &lt;a href=\&quot;https://help.example.com/reset\&quot;&gt;reset guide&lt;/a&gt;.&lt;/li&gt;&lt;/ol&gt;&quot;,&quot;FAQ_Question__c&quot;:&quot;How do I reset the device?&quot;},&quot;changes_summary&quot;:&quot;Restructured the answer into a numbered list and kept the reset-guide link to fix the structure issue.&quot;}
-(If a field&apos;s current value were plain text instead, you would return plain text with \n line breaks — e.g. &quot;To reset:\n1. Hold Power for 10 seconds.&quot;)</content>
+(If a field&apos;s current value were plain text instead, you would return plain text with \n line breaks — e.g. &quot;To reset:\n1. Hold Power for 10 seconds.&quot;)
+
+FINAL REMINDER before you write the JSON: write every rewritten field value in the source language specified under &quot;Language&quot; above. These instructions and the issue/strength lists are in English, but that must NOT influence the language of your output — match the source article&apos;s language exactly. Do not translate the article into English.</content>
         <inputs>
             <apiName>Article_Fields_JSON</apiName>
             <definition>primitive://String</definition>
@@ -102,7 +105,7 @@ Worked example (an HTML rich-text field: note the preserved &lt;ol&gt; list, the
         <isCitationEnabled>false</isCitationEnabled>
         <primaryModel>sfdc_ai__DefaultGPT54</primaryModel>
         <status>Published</status>
-        <versionIdentifier>dIRBZxdJBYVmvmwv4/3DkrD7prMYAANFTVuvFEZTzUI=_4</versionIdentifier>
+        <versionIdentifier>dIRBZxdJBYVmvmwv4/3DkrD7prMYAANFTVuvFEZTzUI=_5</versionIdentifier>
     </templateVersions>
     <type>einstein_gpt__flex</type>
     <visibility>Global</visibility>

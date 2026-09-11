@@ -48,15 +48,23 @@ public with sharing class KBRuntimeConfigService {
     public static RuntimeFilters getRuntimeFilters() {
         RuntimeFilters filters = new RuntimeFilters();
         filters.publishStatus = 'Online';
-        filters.language = 'en_US';
-        filters.supportedLanguages = new Set<String>{ 'en_US' };
+        // Default is ALL languages (null = no Language predicate). The article
+        // selector must not be silently restricted to English — a specific
+        // language is applied only when the admin's wizard prefilter sets one,
+        // or a user adds a Language filter clause in the selector.
+        filters.language = null;
+        filters.supportedLanguages = new Set<String>();
 
         KB_Pipeline_Config__c pipelineConfig = KB_Pipeline_Config__c.getInstance();
         if (pipelineConfig != null && String.isNotBlank(pipelineConfig.Supported_Languages__c)) {
             Set<String> parsed = parseLanguageSet(pipelineConfig.Supported_Languages__c);
             if (!parsed.isEmpty()) {
                 filters.supportedLanguages = parsed;
-                if (!filters.supportedLanguages.contains(filters.language)) {
+                // Only coerce an *explicitly set* language that falls outside the
+                // configured set. Never coerce the null "all languages" default —
+                // that would silently re-restrict the selector to one language.
+                if (String.isNotBlank(filters.language)
+                    && !filters.supportedLanguages.contains(filters.language)) {
                     filters.language = firstLanguage(parsed);
                 }
             }

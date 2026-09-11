@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomMetadata xmlns="http://soap.sforce.com/2006/04/metadata" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+    <label>Fix Language Directive (en)</label>
+    <protected>false</protected>
+    <values>
+        <field>Text_Key__c</field>
+        <value xsi:type="xsd:string">FIX_LANGUAGE_DIRECTIVE</value>
+    </values>
+    <values>
+        <field>Language_Code__c</field>
+        <value xsi:type="xsd:string">en</value>
+    </values>
+    <values>
+        <field>Value__c</field>
+        <value xsi:type="xsd:string">Source article language code: {LANG}. IMPORTANT: write EVERY rewritten field value in the source article's language ({LANG}). Do NOT translate the content into English or any other language — all prose, titles, headings, and list items must be in the source language. Keep English brand names, product names, and acronyms (VPN, MFA, SCIM, EDR, etc.) as-is, but write ALL surrounding prose in the source language. The presence of English terms in the source does NOT make the article English.</value>
+    </values>
+</CustomMetadata>

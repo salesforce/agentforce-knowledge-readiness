@@ -16,8 +16,8 @@
  */
 /**
  * Central orchestrator for Knowledge AI governance.
- * Serves as the LWC controller for the knowledgeConsistencyChecker component.
- * Handles draft verification, publish-with-audit, and force re-evaluation.
+ * Handles rate-limit/usage tracking, force re-evaluation, run-cost estimation,
+ * and composite-key generation for the dedup pipeline.
  */
 public with sharing class KnowledgeAIGovernanceService {
 
@@ -46,13 +46,6 @@ public with sharing class KnowledgeAIGovernanceService {
     }
 
     /**
-     * Verifies a draft article against published articles for conflicts.
-     * No caching for drafts since draft text changes constantly prior to publish.
-     *
-     * @param articleVersionId The KnowledgeArticleVersion Id of the draft
-     * @return DraftEvaluationResult with conflict details
-     */
-    /**
      * Returns the PublishStatus of the article. Used by the LWC to determine
      * draft vs published behavior, since PublishStatus may not be available
      * via the UI API getRecord wire.
@@ -64,157 +57,6 @@ public with sharing class KnowledgeAIGovernanceService {
             WHERE Id = :articleVersionId LIMIT 1
         ];
         return articles.isEmpty() ? null : articles[0].PublishStatus;
-    }
-
-    @AuraEnabled
-    public static PromptTemplateService.DraftEvaluationResult verifyDraft(Id articleVersionId) {
-        Knowledge__kav article = queryArticle(articleVersionId);
-
-        String articleText = buildArticleText(article);
-        if (String.isBlank(articleText)) {
-            PromptTemplateService.DraftEvaluationResult clean = new PromptTemplateService.DraftEvaluationResult();
-            clean.hasConflict = false;
-            return clean;
-        }
-
-        VectorSearchFactory.ActiveVectorConfig config = VectorSearchFactory.getActiveConfig();
-        IVectorSearchService searchService = VectorSearchFactory.getInstance();
-
-        // Same fallback pattern as Tier1VectorSearchQueueable: if Data Cloud is
-        // unreachable, the search index is missing, or the configured impl
-        // throws for any reason, drop down to SOQL keyword matching so the
-        // sidebar always returns a usable result instead of an ugly toast.
-        List<VectorSearchResult> rawResults;
-        try {
-            rawResults = searchService.searchSimilarArticles(
-                articleText,
-                Integer.valueOf(config.maxResults),
-                config.similarityThreshold
-            );
-        } catch (Exception e) {
-            System.debug(LoggingLevel.WARN,
-                'verifyDraft: vector search failed, falling back to SOQL: ' + e.getMessage());
-            rawResults = new Tier1SOQLFallbackService().searchSimilarArticles(
-                articleText,
-                Integer.valueOf(config.maxResults),
-                config.similarityThreshold
-            );
-        }
-
-        // Exclude the current article and any other version of the same article
-        String currentVersionId15 = String.valueOf(articleVersionId).left(15);
-        String currentKnowledgeArticleId = article.KnowledgeArticleId;
-
-        // Bulk-fetch mirror records to check KnowledgeArticleId for all results
-        Set<String> resultVersionIds = new Set<String>();
-        for (VectorSearchResult r : rawResults) {
-            if (r.articleVersionId != null) {
-                resultVersionIds.add(r.articleVersionId);
-            }
-        }
-
-        // Map result version IDs to their stable KnowledgeArticleIds via Knowledge__kav
-        Set<String> sameArticleVersionIds = new Set<String>();
-        sameArticleVersionIds.add(String.valueOf(articleVersionId));
-        if (String.isNotBlank(currentKnowledgeArticleId) && !resultVersionIds.isEmpty()) {
-            for (Knowledge__kav kav : [
-                SELECT Id, KnowledgeArticleId
-                FROM Knowledge__kav
-                WHERE Id IN :resultVersionIds
-                AND KnowledgeArticleId = :currentKnowledgeArticleId
-            ]) {
-                sameArticleVersionIds.add(kav.Id);
-            }
-        }
-
-        List<VectorSearchResult> similarArticles = new List<VectorSearchResult>();
-        for (VectorSearchResult r : rawResults) {
-            if (r.articleVersionId == null) {
-                continue;
-            }
-            if (r.articleVersionId.left(15) == currentVersionId15) {
-                continue;
-            }
-            if (sameArticleVersionIds.contains(r.articleVersionId)) {
-                continue;
-            }
-            similarArticles.add(r);
-        }
-
-        if (similarArticles.isEmpty()) {
-            PromptTemplateService.DraftEvaluationResult clean = new PromptTemplateService.DraftEvaluationResult();
-            clean.hasConflict = false;
-            return clean;
-        }
-
-        return PromptTemplateService.getInstance().evaluateDraft(articleText, similarArticles);
-    }
-
-    /**
-     * Publishes an article with optional bypass audit logging.
-     * If bypassReasonJson is provided, the user is bypassing AI warnings.
-     *
-     * @param knowledgeArticleId The KnowledgeArticleId (stable, not version-specific)
-     * @param articleVersionId The current version Id for logging purposes
-     * @param bypassReasonJson JSON string with bypass reason, or null if no bypass
-     */
-    @AuraEnabled
-    public static void publishArticleWithAudit(
-        Id knowledgeArticleId,
-        Id articleVersionId,
-        String bypassReasonJson
-    ) {
-        // Server-side enforcement of the bypass gate. A non-blank bypassReasonJson
-        // means the caller is publishing PAST consistency warnings — that action
-        // requires the `Bypass_AI_Knowledge_Check` custom permission. The LWC
-        // already hides the "Publish Anyway" button for users without it, but the
-        // permission was UI-only: nothing stopped a direct Apex call. Gate it here
-        // so the rule holds regardless of caller. Seeing duplicates (verifyDraft)
-        // and normal conflict-free publishes (null reason) are unaffected.
-        if (String.isNotBlank(bypassReasonJson)) {
-            if (!FeatureManagement.checkPermission('Bypass_AI_Knowledge_Check')) {
-                throw new AuraHandledException(
-                    'You don\'t have permission to publish past consistency warnings. '
-                    + 'Resolve the duplicates, or ask a Knowledge Manager to override.'
-                );
-            }
-            logBypassAudit(articleVersionId, bypassReasonJson);
-        }
-
-        Id resolvedArticleId = knowledgeArticleId;
-        if (resolvedArticleId == null && articleVersionId != null) {
-            List<Knowledge__kav> versions = [
-                SELECT KnowledgeArticleId
-                FROM Knowledge__kav
-                WHERE Id = :articleVersionId
-                LIMIT 1
-            ];
-            if (!versions.isEmpty()) {
-                resolvedArticleId = versions[0].KnowledgeArticleId;
-            }
-        }
-
-        if (resolvedArticleId == null) {
-            throw new AuraHandledException(
-                'Failed to publish article: knowledgeArticleId could not be resolved from articleVersionId ' +
-                articleVersionId
-            );
-        }
-
-        try {
-            KbManagement.PublishingService.publishArticle(resolvedArticleId, true);
-            KBEnrichmentController.closeEnrichmentCandidatesForDraft(String.valueOf(articleVersionId));
-        } catch (AuraHandledException e) {
-            // Pass through bypass-validation messages verbatim — wrapping
-            // them in 'Failed to publish article:' would mask the real cause.
-            throw e;
-        } catch (Exception e) {
-            throw new AuraHandledException(
-                'Failed to publish article: ' + e.getMessage()
-            );
-        }
-
-        // No mirror sync needed. Source of truth is Knowledge__kav.
     }
 
     /**
@@ -327,81 +169,6 @@ public with sharing class KnowledgeAIGovernanceService {
     public static String generatePipelineEvaluationKey(String versionIdA, String versionIdB, Id pipelineRunId) {
         String pairKey = generateCompositeKey(versionIdA, versionIdB);
         return pipelineRunId == null ? pairKey : pipelineRunId + '_' + pairKey;
-    }
-
-    private static Knowledge__kav queryArticle(Id articleVersionId) {
- // part 2 — FLS-hardened as a DEGRADE read. verifyDraft is a read-only
-        // sidebar that must keep working even when the running user lacks FLS on a
-        // selected field (e.g. AI_Bypass_Audit_Log__c). WITH USER_MODE would
-        // all-or-nothing THROW and break the sidebar, so we instead run the query
-        // and Security.stripInaccessible(READABLE) the rows — inaccessible fields
-        // are dropped from the result, accessible ones survive. Downstream readers
-        // (buildArticleText, logBypassAudit) null-guard each field, so a stripped
-        // field reads as blank rather than erroring. `with sharing` still enforces
-        // record-level visibility.
-        List<Knowledge__kav> articles = [
-            SELECT Id, KnowledgeArticleId, Title, Summary, PublishStatus,
-                   IsLatestVersion, AI_Bypass_Audit_Log__c
-            FROM Knowledge__kav
-            WHERE Id = :articleVersionId
-            LIMIT 1
-        ];
-
-        if (articles.isEmpty()) {
-            throw new AuraHandledException('Article not found: ' + articleVersionId);
-        }
-
-        // Drop any fields the running user can't read; keeps the sidebar alive
-        // under partial FLS instead of throwing.
-        articles = Security.stripInaccessible(AccessType.READABLE, articles).getRecords();
-
-        return articles[0];
-    }
-
-    private static String buildArticleText(Knowledge__kav article) {
-        String text = '';
-        if (String.isNotBlank(article.Title)) {
-            text += article.Title + '\n';
-        }
-        if (String.isNotBlank(article.Summary)) {
-            text += article.Summary;
-        }
-        return text.trim();
-    }
-
-    private static void logBypassAudit(Id articleVersionId, String bypassReasonJson) {
-        Knowledge__kav article = [
-            SELECT Id, AI_Bypass_Audit_Log__c
-            FROM Knowledge__kav
-            WHERE Id = :articleVersionId
-            LIMIT 1
-        ];
-
-        List<Object> logEntries;
-        if (String.isNotBlank(article.AI_Bypass_Audit_Log__c)) {
-            logEntries = (List<Object>) JSON.deserializeUntyped(article.AI_Bypass_Audit_Log__c);
-        } else {
-            logEntries = new List<Object>();
-        }
-
-        Map<String, Object> newEntry = new Map<String, Object>{
-            'timestamp' => Datetime.now().formatGmt('yyyy-MM-dd\'T\'HH:mm:ss\'Z\''),
-            'userId' => UserInfo.getUserId(),
-            'userName' => UserInfo.getName(),
-            'reason' => bypassReasonJson
-        };
-
-        logEntries.add(newEntry);
-
-        // Truncate oldest entries if log exceeds field length
-        String serialized = JSON.serialize(logEntries);
-        while (serialized.length() > 32768 && logEntries.size() > 1) {
-            logEntries.remove(0);
-            serialized = JSON.serialize(logEntries);
-        }
-
-        article.AI_Bypass_Audit_Log__c = serialized;
-        update article;
     }
 
     // ──────────────────────────────────────────────────────────────────────

@@ -40,7 +40,7 @@
  *     is judged by the LLM.
  *   - Attachment strength signal — attachments are not indexed by Data Libraries.
  */
-public with sharing class KBCompletenessScorer extends KBScorerBase {
+public virtual with sharing class KBCompletenessScorer extends KBScorerBase {
 
     // Score floor when a hard gate fails (no title / summary / body, or unusable title)
     @TestVisible
@@ -122,7 +122,12 @@ public with sharing class KBCompletenessScorer extends KBScorerBase {
         KBAssessmentModels.ArticleWrapper llmArticle = new KBAssessmentModels.ArticleWrapper();
         llmArticle.title = title;
         llmArticle.summary = summary;
-        llmArticle.content = KBAssessmentUtils.stripHtml(String.isBlank(content) ? '' : content);
+        // Pass RAW content — the base llmContent() seam strips HTML exactly once.
+        // Pre-stripping here double-stripped: stripHtml is not idempotent on
+        // entity-encoded markup (&lt;tag&gt; decodes to <tag> on the first pass,
+        // then a second pass deletes it as if it were a real tag).
+        llmArticle.content = content;
+        llmArticle.language = article.language;
         result = enhanceWithLLM(result, llmArticle);
 
         if (result.score == null) {
@@ -151,11 +156,17 @@ public with sharing class KBCompletenessScorer extends KBScorerBase {
             result.addIssue('BLOCKING: No title. Title carries significant embedding weight and is required for retrieval.');
             gateFailed = true;
         } else {
-            Integer titleWords = KBAssessmentUtils.countWords(title);
+            // Language-agnostic: effectiveWordCount normalizes CJK/Thai (no word
+            // spaces) into word-equivalents so the same thresholds hold. The
+            // char-length floor is a Latin-centric heuristic (10 chars ≈ 2 English
+            // words), so it's applied only to space-delimited scripts — a dense
+            // 6-char Chinese title is complete and must not hard-fail.
+            Boolean nonSpaceDelim = KBAssessmentUtils.isNonSpaceDelimited(title);
+            Integer titleWords = KBAssessmentUtils.effectiveWordCount(title);
             Integer minTitleLength = config != null && config.Min_Title_Length__c != null
                 ? (Integer) config.Min_Title_Length__c : 10;
 
-            if (title.length() < minTitleLength) {
+            if (!nonSpaceDelim && title.length() < minTitleLength) {
                 result.addIssue('BLOCKING: Title is too short (' + title.length() + ' chars, minimum ' + minTitleLength + ').');
                 gateFailed = true;
             } else if (titleWords < 3) {
@@ -250,7 +261,9 @@ public with sharing class KBCompletenessScorer extends KBScorerBase {
             }
         }
 
-        Integer summaryWords = KBAssessmentUtils.countWords(summary);
+        // Script-normalized so CJK/Thai summaries aren't mis-sized (a 20-char
+        // Chinese summary is ~13 word-equivalents, not 1-2 whitespace tokens).
+        Integer summaryWords = KBAssessmentUtils.effectiveWordCount(summary);
         if (summaryWords < 10) {
             result.addIssue('Summary is too brief (' + summaryWords + ' words). Aim for 1-2 complete sentences.');
         } else if (summaryWords > 100) {
@@ -260,63 +273,18 @@ public with sharing class KBCompletenessScorer extends KBScorerBase {
         }
     }
 
-    // ==================== LLM Enhancement ====================
+    // ==================== LLM Seam ====================
+    // The call/merge/score flow lives in KBScorerBase.enhanceWithLLM; Completeness
+    // reads plain text, so it keeps the base's HTML-stripping llmContent default.
+    // (Its distinct fallback — the counting model rather than a flat baseline —
+    // is applied by the workhorse when the null-score sentinel survives.)
 
-    /**
-     * Single LLM call to Evaluate_Completeness. When the LLM succeeds, its 0-100
-     * score becomes the dimension score directly; the deterministic counting model
-     * is bypassed because the LLM has already weighed severity. Issues/strengths
-     * from both layers are surfaced as user feedback (does NOT drive the score in
-     * this path).
-     */
-    protected override KBAssessmentModels.DimensionScore enhanceWithLLM(
-        KBAssessmentModels.DimensionScore deterministicResult,
-        KBAssessmentModels.ArticleWrapper article
-    ) {
-        if (this.promptService == null) {
-            return deterministicResult;
-        }
-        try {
-            PromptTemplateService.LLMEvaluationResult llmResult =
-                this.promptService.evaluateCompleteness(article.title, article.content, article.summary);
+    protected override String scoringTemplateName() {
+        return 'Evaluate_Completeness';
+    }
 
-            if (llmResult == null || !llmResult.success) {
-                return deterministicResult;
-            }
-
-            // Append LLM-contributed feedback (deduped) for user surfacing.
-            // Prefer the parallel issueAnalyses list so impact emitted by the
-            // prompt template rides into the analysis records rather than being
-            // recomputed by the deterministic mappers. Items surface verbatim —
- // no source-path prefix.
-            Set<String> existingIssues = new Set<String>(deterministicResult.issues);
-            if (llmResult.issueAnalyses != null && !llmResult.issueAnalyses.isEmpty()) {
-                for (KBAssessmentModels.IssueAnalysis ia : llmResult.issueAnalyses) {
-                    if (ia == null || String.isBlank(ia.text)) continue;
-                    if (existingIssues.contains(ia.text)) continue;
-                    deterministicResult.addIssue(ia.text, ia.impact, ia.effort, ia.priority);
-                }
-            } else if (llmResult.issues != null) {
-                for (String issue : llmResult.issues) {
-                    if (String.isNotBlank(issue) && !existingIssues.contains(issue)) {
-                        deterministicResult.addIssue(issue);
-                    }
-                }
-            }
-            Set<String> existingStrengths = new Set<String>(deterministicResult.strengths);
-            for (String strength : llmResult.strengths) {
-                if (String.isNotBlank(strength) && !existingStrengths.contains(strength)) {
-                    deterministicResult.strengths.add(strength);
-                }
-            }
-
-            // LLM score wins — it has already judged severity. Counting model is bypassed.
-            deterministicResult.score = llmResult.score;
-            return deterministicResult;
-        } catch (Exception e) {
-            System.debug(LoggingLevel.ERROR, 'Completeness LLM enhancement failed: ' + e.getMessage());
-            return deterministicResult;
-        }
+    protected override String evaluationType() {
+        return 'completeness';
     }
 
     // ==================== Helpers ====================

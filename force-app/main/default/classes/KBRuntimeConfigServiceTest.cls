@@ -77,9 +77,10 @@ private class KBRuntimeConfigServiceTest {
         Test.stopTest();
 
         Assert.areEqual('Online', f.publishStatus, 'Default publishStatus is Online');
-        Assert.areEqual('en_US', f.language, 'Default language is en_US');
-        Assert.isTrue(f.supportedLanguages.contains('en_US'),
-            'Default supportedLanguages includes en_US');
+        Assert.isNull(f.language,
+            'Default language is null = ALL languages (no English-only restriction)');
+        Assert.isTrue(f.supportedLanguages.isEmpty(),
+            'Default supportedLanguages is empty (no language restriction)');
     }
 
     @IsTest
@@ -94,7 +95,10 @@ private class KBRuntimeConfigServiceTest {
 
         Assert.areEqual(3, f.supportedLanguages.size(), 'Three languages parsed');
         Assert.isTrue(f.supportedLanguages.contains('fr_FR'));
-        Assert.areEqual('en_US', f.language, 'Default en_US preserved when in supported set');
+        Assert.isNull(f.language,
+            'Configuring supported languages does NOT collapse the all-languages '
+            + 'default to a single language — language stays null (all) unless '
+            + 'an explicit prefilter language is set');
     }
 
     @IsTest
@@ -113,9 +117,10 @@ private class KBRuntimeConfigServiceTest {
     }
 
     @IsTest
-    static void testGetRuntimeFilters_LanguageFallbackWhenDefaultNotSupported() {
-        // When supportedLanguages does NOT include en_US, language flips to
-        // the alphabetically-first supported language (firstLanguage helper).
+    static void testGetRuntimeFilters_SupportedLanguagesDoNotForceASingleLanguage() {
+        // Configuring supported languages (even ones excluding en_US) must NOT
+        // collapse the all-languages default to a single language — the selector
+        // shows every language unless an explicit prefilter language is set.
         KB_Pipeline_Config__c cfg = KB_Pipeline_Config__c.getOrgDefaults();
         cfg.Supported_Languages__c = 'fr_FR;de';
         upsert cfg KB_Pipeline_Config__c.Id;
@@ -124,7 +129,8 @@ private class KBRuntimeConfigServiceTest {
         KBRuntimeConfigService.RuntimeFilters f = KBRuntimeConfigService.getRuntimeFilters();
         Test.stopTest();
 
-        Assert.areEqual('de', f.language, 'Language flips to alphabetically-first supported value');
+        Assert.isNull(f.language,
+            'Default stays null (all languages) — no coercion to a single value');
         Assert.isFalse(f.supportedLanguages.contains('en_US'),
             'en_US not in the configured set');
     }
@@ -164,7 +170,7 @@ private class KBRuntimeConfigServiceTest {
 
         // Catch path swallows the error and preserves defaults.
         Assert.areEqual('Online', f.publishStatus, 'Default preserved when JSON malformed');
-        Assert.areEqual('en_US', f.language);
+        Assert.isNull(f.language, 'Default stays null = all languages when JSON malformed');
     }
 
     // ──────────────────────────────────────────────────────────────────────

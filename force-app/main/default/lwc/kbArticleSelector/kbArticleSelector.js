@@ -17,6 +17,7 @@
 import { LightningElement, api, track, wire } from 'lwc';
 import { ShowToastEvent } from 'lightning/platformShowToastEvent';
 import getFilteredArticles from '@salesforce/apex/KBAssessmentController.getFilteredArticles';
+import getArticleDataCategories from '@salesforce/apex/KBAssessmentController.getArticleDataCategories';
 import getArticleById from '@salesforce/apex/KBAssessmentController.getArticleById';
 import getArticlesByIds from '@salesforce/apex/KBAssessmentController.getArticlesByIds';
 import getArticleTypeOptions from '@salesforce/apex/KBAssessmentController.getArticleTypeOptions';
@@ -303,6 +304,20 @@ export default class KbArticleSelector extends LightningElement {
     @track filterClauses = [];
     @track filterFormula = '';     // user-entered formula
     @track formulaError = null;    // inline validation message
+
+    // ── Data-category filter (accordion drawers) ──────────────────────────
+    // Render model built from getArticleDataCategories: one drawer per group,
+    // each with flattened indented rows (LWC templates can't recurse a tree).
+    @track categoryGroups = [];
+    // Raw wire payload, retained so we can rebuild the render model (with
+    // updated `checked` flags) after each toggle without re-hitting the wire.
+    _rawCategoryGroups = [];
+    // Selection state: { groupApiName: Set<categoryName> }. Drives both the
+    // checkbox `checked` flags and the dataCategoryFilters payload.
+    _selectedByCategory = {};
+    // Popover open/closed — the tree lives in a click-away dropdown so the
+    // filter row stays compact until the user opens it.
+    @track isCategoryDropdownOpen = false;
 
     // Draft clause being composed in the "add clause" row. Reset after each
     // successful Add Filter click. Field/operator/value/values shape mirrors
@@ -661,6 +676,7 @@ export default class KbArticleSelector extends LightningElement {
                 filterLogic: this.filterLogic,
                 filterFormula: (this.filterFormula || '').trim() || null,
                 filterClauses: this.filterClauses,
+                dataCategoryFilters: this.dataCategoryFilters,
                 pageSize: PAGE_SIZE,
                 offset: this.offset
             });
@@ -930,6 +946,159 @@ export default class KbArticleSelector extends LightningElement {
         this.draftOperator = '';
         this.draftValue = '';
         this.draftValues = [];
+        this._selectedByCategory = {};
+        this.rebuildCategoryModel();
+        this.resetAndLoad();
+    }
+
+    // ── Data-category drawers ─────────────────────────────────────────────
+
+    @wire(getArticleDataCategories)
+    wiredCategories({ data, error }) {
+        if (data) {
+            this._rawCategoryGroups = data;
+            this.rebuildCategoryModel();
+        } else if (error) {
+            // Category filtering is an optional convenience — an org without
+            // Knowledge data categories (or a describe hiccup) simply hides the
+            // drawers. Don't surface an error banner over the whole selector.
+            this._rawCategoryGroups = [];
+            this.categoryGroups = [];
+        }
+    }
+
+    get hasDataCategories() {
+        return this.categoryGroups.length > 0;
+    }
+
+    /**
+     * Number of categories selected across all groups — drives the drawer
+     * header badge + the "Clear categories" affordance.
+     */
+    get selectedCategoryCount() {
+        return Object.values(this._selectedByCategory)
+            .reduce((sum, names) => sum + (names ? names.length : 0), 0);
+    }
+
+    get hasSelectedCategories() {
+        return this.selectedCategoryCount > 0;
+    }
+
+    get clearCategoriesDisabled() {
+        return this.selectedCategoryCount === 0;
+    }
+
+    /** Compact dropdown trigger label — shows the selected count when any. */
+    get categoryTriggerLabel() {
+        const n = this.selectedCategoryCount;
+        return n ? `Data Categories (${n})` : 'All categories';
+    }
+
+    toggleCategoryDropdown() {
+        this.isCategoryDropdownOpen = !this.isCategoryDropdownOpen;
+    }
+
+    closeCategoryDropdown() {
+        this.isCategoryDropdownOpen = false;
+    }
+
+    /**
+     * The payload shape KBAssessmentController.extractDataCategoryFilters
+     * expects: { groupApiName: [categoryName, …] }. Empty groups omitted;
+     * returns null when nothing is selected so no WITH DATA CATEGORY clause
+     * is emitted.
+     */
+    get dataCategoryFilters() {
+        const out = {};
+        for (const [groupName, names] of Object.entries(this._selectedByCategory)) {
+            if (names && names.length) {
+                out[groupName] = [...names];
+            }
+        }
+        return Object.keys(out).length ? out : null;
+    }
+
+    /**
+     * Flattens the wired tree into indented checkbox rows per group, stamping
+     * the current `checked` state from _selectedByCategory. Rebuilt on wire
+     * load and after every toggle.
+     */
+    rebuildCategoryModel() {
+        const groups = this._rawCategoryGroups || [];
+        this.categoryGroups = groups.map((g) => {
+            const selected = this._selectedByCategory[g.name] || [];
+            const selectedSet = new Set(selected);
+            const rows = [];
+            const walk = (nodes, level) => {
+                for (const node of nodes || []) {
+                    rows.push({
+                        key: g.name + ':' + node.name,
+                        groupName: g.name,
+                        name: node.name,
+                        // Count folded into the label so it stays on one line
+                        // and the row scales cleanly in a deep tree.
+                        checkboxLabel: `${node.label} (${node.count})`,
+                        checked: selectedSet.has(node.name),
+                        // 1.25rem per nesting level for the tree indent; a faint
+                        // left border reinforces the hierarchy on deep trees.
+                        indentClass:
+                            level > 0
+                                ? 'category-row category-row_nested'
+                                : 'category-row',
+                        indentStyle: `padding-left: ${level * 1.25}rem;`
+                    });
+                    if (node.children && node.children.length) {
+                        walk(node.children, level + 1);
+                    }
+                }
+            };
+            walk(g.categories, 0);
+            const groupSelectedCount = selected.length;
+            return {
+                name: g.name,
+                label: g.label,
+                rows,
+                // Accordion section label. The suffix reads "· N selected" so
+                // it can't be mistaken for an article count — the per-row (n)
+                // badges are the article counts.
+                displayLabel: groupSelectedCount
+                    ? `${g.label} · ${groupSelectedCount} selected`
+                    : g.label
+            };
+        });
+    }
+
+    handleCategoryToggle(event) {
+        const groupName = event.target.dataset.group;
+        const name = event.target.dataset.name;
+        const checked = event.target.checked;
+        if (!groupName || !name) {
+            return;
+        }
+        const current = new Set(this._selectedByCategory[groupName] || []);
+        if (checked) {
+            current.add(name);
+        } else {
+            current.delete(name);
+        }
+        // Reassign the whole map so the getters recompute reactively.
+        const next = { ...this._selectedByCategory };
+        if (current.size) {
+            next[groupName] = [...current];
+        } else {
+            delete next[groupName];
+        }
+        this._selectedByCategory = next;
+        this.rebuildCategoryModel();
+        this.resetAndLoad();
+    }
+
+    handleClearCategories() {
+        if (!this.hasSelectedCategories) {
+            return;
+        }
+        this._selectedByCategory = {};
+        this.rebuildCategoryModel();
         this.resetAndLoad();
     }
 
@@ -1278,7 +1447,10 @@ export default class KbArticleSelector extends LightningElement {
                 operator: c.operator,
                 value: c.value || null,
                 values: Array.isArray(c.values) ? [...c.values] : null
-            }))
+            })),
+            // Frozen with the rest of the filter context so "select all
+            // matching" resolves the same category-scoped set at submit time.
+            dataCategoryFilters: this.dataCategoryFilters
         };
     }
 
