@@ -44,7 +44,7 @@
  *     &quot;moving on to&quot;, etc.) produced false positives on well-written articles
  *     and missed real drift that didn't use those phrases.
  */
-public with sharing class KBStructureScorer extends KBScorerBase {
+public virtual with sharing class KBStructureScorer extends KBScorerBase {
 
     // Score floor when the no-content gate fails (article has no body).
     @TestVisible
@@ -71,24 +71,26 @@ public with sharing class KBStructureScorer extends KBScorerBase {
         return scoreStructure(
             article == null ? null : article.content,
             article == null ? null : article.title,
-            article == null ? null : article.summary
+            article == null ? null : article.summary,
+            article == null ? null : article.language
         );
     }
 
     /**
      * @TestVisible 2-arg form preserved for the existing test suite (which
-     * supplies content + title primitives). Delegates with a null Summary.
+     * supplies content + title primitives). Delegates with a null Summary/Language.
      */
     @TestVisible
     private KBAssessmentModels.DimensionScore scoreStructure(String htmlContent, String title) {
-        return scoreStructure(htmlContent, title, null);
+        return scoreStructure(htmlContent, title, null, null);
     }
 
     /**
-     * Title and Summary are threaded as their own dedicated LLM inputs (issue
- * never folded into the body Content.
+     * Title and Summary are threaded as their own dedicated LLM inputs — never
+     * folded into the body Content. Language drives the per-language scoring
+     * directive so a non-English article is judged in its own language.
      */
-    private KBAssessmentModels.DimensionScore scoreStructure(String htmlContent, String title, String summary) {
+    private KBAssessmentModels.DimensionScore scoreStructure(String htmlContent, String title, String summary, String language) {
         KBAssessmentModels.DimensionScore result = new KBAssessmentModels.DimensionScore();
 
         if (String.isBlank(htmlContent)) {
@@ -110,6 +112,7 @@ public with sharing class KBStructureScorer extends KBScorerBase {
         llmArticle.title = title;
         llmArticle.summary = summary;
         llmArticle.content = htmlContent;
+        llmArticle.language = language;
         result = enhanceWithLLM(result, llmArticle);
 
         if (result.score == null) {
@@ -123,59 +126,24 @@ public with sharing class KBStructureScorer extends KBScorerBase {
         return result;
     }
 
+    // ==================== LLM Seam ====================
+    // The call/merge/score flow lives in KBScorerBase.enhanceWithLLM; this
+    // dimension only declares which template it scores against and that its
+    // LLM input is the RAW HTML markup (headings/lists/tables), not stripped.
+
+    protected override String scoringTemplateName() {
+        return 'Evaluate_Structure';
+    }
+
+    protected override String evaluationType() {
+        return 'structure';
+    }
+
     /**
-     * Single LLM call to Evaluate_Structure. When the LLM succeeds, its
-     * 0-100 score becomes the dimension score directly; issues/strengths
-     * from the LLM are surfaced as user feedback (does NOT drive the score
-     * in this path).
+     * Structure judges the RAW HTML markup, so — unlike Clarity / Completeness —
+     * the body must NOT be stripped before it reaches the LLM.
      */
-    protected override KBAssessmentModels.DimensionScore enhanceWithLLM(
-        KBAssessmentModels.DimensionScore deterministicResult,
-        KBAssessmentModels.ArticleWrapper article
-    ) {
-        if (this.promptService == null) {
-            return deterministicResult;
-        }
-        try {
-            PromptTemplateService.LLMEvaluationResult llmResult =
-                this.promptService.evaluateStructure(article.title, article.content, article.summary);
-
-            if (llmResult == null || !llmResult.success) {
-                return deterministicResult;
-            }
-
-            Set<String> existingIssues = new Set<String>(deterministicResult.issues);
-            // Prefer the parallel issueAnalyses list so impact rides along into
-            // KB_Dimension_Analysis__c. Fall back to plain issue strings only
-            // when the LLM didn't emit per-issue severity (older response shape,
- // defensive). Items surface verbatim — no source-path prefix.
-            if (llmResult.issueAnalyses != null && !llmResult.issueAnalyses.isEmpty()) {
-                for (KBAssessmentModels.IssueAnalysis ia : llmResult.issueAnalyses) {
-                    if (ia == null || String.isBlank(ia.text)) continue;
-                    if (existingIssues.contains(ia.text)) continue;
-                    deterministicResult.addIssue(ia.text, ia.impact, ia.effort, ia.priority);
-                }
-            } else {
-                for (String issue : llmResult.issues) {
-                    if (String.isNotBlank(issue) && !existingIssues.contains(issue)) {
-                        deterministicResult.addIssue(issue);
-                    }
-                }
-            }
-            Set<String> existingStrengths = new Set<String>(deterministicResult.strengths);
-            for (String strength : llmResult.strengths) {
-                if (String.isNotBlank(strength) && !existingStrengths.contains(strength)) {
-                    deterministicResult.strengths.add(strength);
-                }
-            }
-
-            // LLM score wins — it has already judged severity in context with
-            // the chunking parameters. Counting model is bypassed.
-            deterministicResult.score = llmResult.score;
-            return deterministicResult;
-        } catch (Exception e) {
-            System.debug(LoggingLevel.ERROR, 'Structure LLM enhancement failed: ' + e.getMessage());
-            return deterministicResult;
-        }
+    protected override String llmContent(KBAssessmentModels.ArticleWrapper article) {
+        return article == null ? null : article.content;
     }
 }

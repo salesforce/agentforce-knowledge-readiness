@@ -40,7 +40,7 @@
                         </p>
                     </div>
                     <p class="slds-text-body_small slds-text-color_weak slds-m-bottom_small">
-                        Click <strong>Next</strong> to begin. The final step (<strong>Validate &amp; Save</strong>) reports on org-readiness checks (Data Cloud, search index, content fields, published articles, bypass permission) so you can verify everything is wired up before running your first scan.
+                        Click <strong>Next</strong> to begin. The final step (<strong>Validate &amp; Save</strong>) reports on org-readiness checks (Data Cloud, search index, content fields, published articles) so you can verify everything is wired up before running your first scan.
                     </p>
 
  <!-- Permission Sets: explains the 3 shipped permsets and
@@ -132,21 +132,13 @@
                                 <div class="slds-m-bottom_medium">
                                     <c-kb-setup-score-weights weights={scoreWeights} onweightschange={handleWeightsChange}></c-kb-setup-score-weights>
                                 </div>
- <!-- Duplicate Detection. Carries the chunk-level
-                                     similarity threshold, and (when the user holds
-                                     KB_PrePublishCheck_Beta) a "Pre-publish check"
-                                     subsection for the record-page draft scan's
-                                     top-K. That value lives on vectorConfig, so it
-                                     comes back on a separate event and saves via the
-                                     vector path. -->
+ <!-- Duplicate Detection. Carries the similar-article scan
+                                     top-K, the match-confidence floor, and the
+                                     max matches to deep-compare. -->
                                 <div class="slds-m-bottom_medium">
                                     <c-kb-setup-pipeline-config
                                         config={pipelineConfig}
-                                        show-prepublish={showMaxResults}
-                                        prepublish-top-k={vectorMaxResults}
-                                        help-prepublish-top-k={helpPrepublishTopK}
-                                        onconfigchange={handlePipelineConfigChange}
-                                        onprepublishtopkchange={handleMaxResultsChange}>
+                                        onconfigchange={handlePipelineConfigChange}>
                                     </c-kb-setup-pipeline-config>
                                 </div>
                                 <lightning-tabset>

@@ -59,6 +59,47 @@ public with sharing class KBAssessmentUtils {
         return count;
     }
 
+    // Count of Han (CJK), Hiragana/Katakana, and Thai characters — scripts that
+    // do NOT put spaces between words, so whitespace word-counting is meaningless.
+    public static Integer countCjkThaiChars(String text) {
+        if (String.isBlank(text)) {
+            return 0;
+        }
+        // Hiragana/Katakana, CJK Ext-A, CJK Unified, CJK Compat, Thai.
+        return stripHtml(text).replaceAll(
+            '[^\\x{3040}-\\x{30FF}\\x{3400}-\\x{4DBF}\\x{4E00}-\\x{9FFF}\\x{F900}-\\x{FAFF}\\x{0E00}-\\x{0E7F}]',
+            ''
+        ).length();
+    }
+
+    // True when the text is predominantly a non-space-delimited script (Chinese /
+    // Japanese / Thai). Latin, Cyrillic and Arabic are space-delimited, so they
+    // return false and keep using whitespace word-counting.
+    public static Boolean isNonSpaceDelimited(String text) {
+        if (String.isBlank(text)) {
+            return false;
+        }
+        Integer cjkThai = countCjkThaiChars(text);
+        Integer spaceDelim = stripHtml(text)
+            .replaceAll('[^A-Za-z0-9\\x{00C0}-\\x{024F}\\x{0400}-\\x{04FF}\\x{0600}-\\x{06FF}]', '')
+            .length();
+        return cjkThai > spaceDelim;
+    }
+
+    // Script-normalized "word" count so the same thresholds work across scripts:
+    // whitespace words for space-delimited text; for CJK/Thai, approximate words
+    // from character count (~1.6 chars per word is a widely used heuristic).
+    public static Integer effectiveWordCount(String text) {
+        if (String.isBlank(text)) {
+            return 0;
+        }
+        if (isNonSpaceDelimited(text)) {
+            Integer chars = countCjkThaiChars(text);
+            return chars <= 0 ? 0 : (Integer) Math.max(1, Math.round(chars / 1.6));
+        }
+        return countWords(text);
+    }
+
     public static List<String> getSentences(String text) {
         List<String> sentences = new List<String>();
         if (String.isBlank(text)) {
@@ -66,7 +107,9 @@ public with sharing class KBAssessmentUtils {
         }
 
         String cleanText = stripHtml(text);
-        List<String> rawSentences = cleanText.split('[.!?]+');
+        // Include CJK fullwidth terminators (。！？), the Arabic question mark (؟),
+        // and the Latin .!? so sentence-splitting is language-agnostic.
+        List<String> rawSentences = cleanText.split('[.!?\\x{3002}\\x{FF01}\\x{FF1F}\\x{061F}]+');
 
         for (String sentence : rawSentences) {
             String trimmed = sentence.trim();

@@ -18,7 +18,6 @@ import { LightningElement, track, wire } from 'lwc';
 import { NavigationMixin } from 'lightning/navigation';
 import { ShowToastEvent } from 'lightning/platformShowToastEvent';
 import KbUnsavedChangesModal from 'c/kbUnsavedChangesModal';
-import hasPrePublishCheckBeta from '@salesforce/customPermission/KB_PrePublishCheck_Beta';
 import canAccessAssessments from '@salesforce/apex/KBSetupOrchestratorController.canAccessAssessments';
 import getBootstrapData from '@salesforce/apex/KBSetupOrchestratorController.getBootstrapData';
 import saveWizardState from '@salesforce/apex/KBSetupOrchestratorController.saveWizardState';
@@ -140,9 +139,8 @@ export default class KbSetupExperienceWizard extends NavigationMixin(LightningEl
     // Distinct from _vectorDirty: tracks whether the search INDEX itself changed
     // (the search-index / ADL component). The vector-search validate() gate — and
     // its transient custom-index "published-only" ack, reset on every load — is
-    // about the index, NOT the pre-publish top-K (maxResults). Editing maxResults
-    // flips _vectorDirty (so it still persists via the vector save) but NOT this
-    // flag, so an unrelated top-K bump never re-fires the index ack gate.
+    // about the index. Kept separate from _vectorDirty so a future non-index
+    // vector-config edit can persist without re-firing the index ack gate.
     _vectorIndexDirty = false;
     // The step we were trying to navigate to when we intercepted dirty state.
     // null → no pending navigation; number → target step.
@@ -406,8 +404,8 @@ export default class KbSetupExperienceWizard extends NavigationMixin(LightningEl
             // Vector-search validity check first, so the search-index-required
             // rule surfaces as an inline form-field error rather than a
             // server-side toast. Gated on _vectorIndexDirty (not _vectorDirty):
-            // validate() enforces the search-INDEX ack, so an unrelated maxResults
-            // (top-K) edit must not re-fire it.
+            // validate() enforces the search-INDEX ack, so a non-index vector
+            // edit must not re-fire it.
             const vectorComp = this.template.querySelector('c-kb-setup-vector-search');
             if (vectorComp && typeof vectorComp.validate === 'function' && !vectorComp.validate()) {
                 throw new Error('Resolve the highlighted fields before saving.');
@@ -527,48 +525,9 @@ export default class KbSetupExperienceWizard extends NavigationMixin(LightningEl
         this.vectorConfig = { ...event.detail };
         this._markDirty('2');
         this._vectorDirty = true;
-        // The search INDEX itself changed here (not just maxResults), so the
-        // index ack gate must re-validate on save.
+        // The search index config changed here, so the index ack gate must
+        // re-validate on save.
         this._vectorIndexDirty = true;
-    }
-
- // Max Results lives on the shared vectorConfig but is rendered in the
-    // Advanced accordion (out of the mandatory search-index section). Editing it
-    // marks the vector section dirty so it persists via the vector save path.
-    get vectorMaxResults() {
-        return this.vectorConfig ? this.vectorConfig.maxResults : undefined;
-    }
-
-    // Max Results (KB_Vector_Search_Config__c.Max_Results__c) tunes ONE runtime
-    // path only: KnowledgeAIGovernanceService.verifyDraft, i.e. the single-article
-    // Pre-publish duplicate check on the Knowledge record page. That tab is itself
-    // gated by the KB_PrePublishCheck_Beta custom permission, so surfacing its
-    // tuning knob for admins who can't see the feature is just noise (and reads as
-    // a near-duplicate of the batch "Similar articles to scan" knob). Gate the
-    // field on the same permission that gates the feature it configures.
-    get showMaxResults() {
-        return hasPrePublishCheckBeta === true;
-    }
-
-    // Help text for the pre-publish top-K, passed into the Duplicate Detection
-    // child's subsection. Plain string (not a Custom Label) — one-off copy, and
-    // avoids a labels metadata deploy for a single beta-gated field.
-    get helpPrepublishTopK() {
-        return 'How many similar articles the single-article Pre-publish duplicate check scans on the Knowledge record page. Separate from the batch dedup pipeline’s Matching setting above.';
-    }
-
-    // Fired by kbSetupPipelineConfig's Pre-publish subsection. event.detail is the
-    // already-parsed number (or null) — the child owns the parse. Writes to
-    // vectorConfig.maxResults and marks the vector section dirty so it persists
-    // via saveVectorConfiguration, keeping it off the pipeline save.
-    handleMaxResultsChange(event) {
-        const value = event.detail;
-        this.vectorConfig = {
-            ...this.vectorConfig,
-            maxResults: value === null || value === undefined ? undefined : value
-        };
-        this._markDirty('2');
-        this._vectorDirty = true;
     }
 
     // Data-categories toggle surfaced directly on Essentials. Writes the same

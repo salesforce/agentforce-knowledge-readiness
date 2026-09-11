@@ -100,3 +100,47 @@
         max-height: none;
     }
 }
+
+/* ── Data-category drawers ────────────────────────────────────────────────
+   A potentially large category tree is capped to a scrollable viewport so it
+   never blows out the modal height; deep nesting is indented per level with a
+   faint guide line. */
+.category-tree-scroll {
+    max-height: 18rem;
+    overflow-y: auto;
+    overflow-x: hidden;
+}
+
+.category-row {
+    padding-top: 0.125rem;
+    padding-bottom: 0.125rem;
+}
+
+/* Guide line for nested (level > 0) categories. */
+.category-row_nested {
+    border-left: 1px solid #dddbda;
+    margin-left: 0.5rem;
+}
+
+/* Compact dropdown trigger — mirrors the width/feel of the filter comboboxes. */
+.category-dropdown__trigger {
+    width: 100%;
+    text-align: left;
+    justify-content: space-between;
+}
+
+/* Full-viewport transparent layer so a click anywhere outside the panel
+   closes the popover. Sits just under the panel. */
+.category-dropdown__backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 9000;
+}
+
+/* The popover itself, anchored under the trigger. */
+.category-dropdown__panel {
+    z-index: 9001;
+    min-width: 22rem;
+    max-width: 30rem;
+    padding: 0;
+}

@@ -130,6 +130,17 @@ public inherited sharing class Tier1VectorSearchQueueable implements Queueable, 
             }
         }
 
+        // Cross-language / same-master exclusion. Two KAVs sharing a
+        // KnowledgeArticleId are translations (or a straggler prior version)
+        // of the same master and are not comparable; two KAVs with different
+        // Language codes are not comparable either — a mono-lingual retrieval
+        // index only searches one language at a time. The SOQL fallback path
+        // already filters by Language upstream, but we run the guard on both
+        // paths as one consistent gate so a multilingual Data Cloud index
+        // cannot leak cross-language pairs downstream. Tier 3 has a matching
+        // defensive guard for cached-pair replay paths.
+        filterCrossLanguagePairs(candidatesByTarget);
+
         if (candidatesByTarget.isEmpty()) {
             System.debug('Tier 2: No candidates found' + (usedFallback ? ' (SOQL fallback)' : '') + '.');
             // Skip the chained callback enqueue under test — Apex caps
@@ -194,6 +205,102 @@ public inherited sharing class Tier1VectorSearchQueueable implements Queueable, 
         if (endIndex < articleVersionIds.size()) {
             System.debug('Tier 2: ' + (articleVersionIds.size() - endIndex)
                 + ' articles deferred to next pipeline run.');
+        }
+    }
+
+    /**
+     * Loads Language + KnowledgeArticleId for every id in the pair graph and
+     * delegates to applyPairFilter. Split from the pure filter so tests can
+     * exercise the filtering logic with an in-memory article map, avoiding
+     * the org-level "translations enabled" gate that inserting Language != 'en_US'
+     * KAV rows would otherwise trip in test contexts.
+     */
+    private static void filterCrossLanguagePairs(Map<Id, List<Id>> candidatesByTarget) {
+        if (candidatesByTarget == null || candidatesByTarget.isEmpty()) {
+            return;
+        }
+
+        Set<Id> allIds = new Set<Id>();
+        for (Id targetId : candidatesByTarget.keySet()) {
+            allIds.add(targetId);
+            List<Id> cands = candidatesByTarget.get(targetId);
+            if (cands != null) {
+                allIds.addAll(cands);
+            }
+        }
+
+        Map<Id, Knowledge__kav> articleMap = new Map<Id, Knowledge__kav>();
+        for (Knowledge__kav art : [
+            SELECT Id, Language, KnowledgeArticleId
+            FROM Knowledge__kav
+            WHERE Id IN :allIds
+        ]) {
+            articleMap.put(art.Id, art);
+        }
+
+        applyPairFilter(candidatesByTarget, articleMap);
+    }
+
+    /**
+     * Mutates candidatesByTarget in place, removing (target, candidate) entries
+     * that share a KnowledgeArticleId (same master — translation or straggler
+     * prior version) or whose Language codes differ. A candidate whose KAV row
+     * is missing from articleMap (deleted / access lost between search and the
+     * follow-up query) is also dropped defensively. Empties any target key
+     * whose candidate list becomes empty.
+     */
+    @TestVisible
+    private static void applyPairFilter(
+        Map<Id, List<Id>> candidatesByTarget,
+        Map<Id, Knowledge__kav> articleMap
+    ) {
+        if (candidatesByTarget == null || candidatesByTarget.isEmpty()) {
+            return;
+        }
+
+        Integer skippedSameMaster = 0;
+        Integer skippedCrossLanguage = 0;
+        Integer skippedUnknown = 0;
+        Set<Id> emptyTargets = new Set<Id>();
+
+        for (Id targetId : candidatesByTarget.keySet()) {
+            Knowledge__kav targetArt = articleMap != null ? articleMap.get(targetId) : null;
+            List<Id> cands = candidatesByTarget.get(targetId);
+            List<Id> kept = new List<Id>();
+            if (cands != null) {
+                for (Id candidateId : cands) {
+                    Knowledge__kav candArt = articleMap != null ? articleMap.get(candidateId) : null;
+                    if (targetArt == null || candArt == null) {
+                        skippedUnknown++;
+                        continue;
+                    }
+                    if (targetArt.KnowledgeArticleId == candArt.KnowledgeArticleId) {
+                        skippedSameMaster++;
+                        continue;
+                    }
+                    if (targetArt.Language != candArt.Language) {
+                        skippedCrossLanguage++;
+                        continue;
+                    }
+                    kept.add(candidateId);
+                }
+            }
+            if (kept.isEmpty()) {
+                emptyTargets.add(targetId);
+            } else {
+                candidatesByTarget.put(targetId, kept);
+            }
+        }
+
+        for (Id t : emptyTargets) {
+            candidatesByTarget.remove(t);
+        }
+
+        if (skippedSameMaster > 0 || skippedCrossLanguage > 0 || skippedUnknown > 0) {
+            System.debug('Tier 1: cross-language filter skipped '
+                + skippedSameMaster + ' same-master, '
+                + skippedCrossLanguage + ' cross-language, '
+                + skippedUnknown + ' unresolved pairs.');
         }
     }
 

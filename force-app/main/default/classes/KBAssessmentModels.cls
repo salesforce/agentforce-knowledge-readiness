@@ -103,6 +103,11 @@ public with sharing class KBAssessmentModels {
         @AuraEnabled public String urlName { get; set; }
         @AuraEnabled public Datetime lastModifiedDate { get; set; }
         @AuraEnabled public String publishStatus { get; set; }
+        // Standard Knowledge language code (e.g. 'en_US', 'fr'). Drives the
+        // per-language LLM scoring directive so issue/strength/reasoning text
+        // comes back in the article's language and grammar is judged against
+        // that language's conventions rather than English.
+        @AuraEnabled public String language { get; set; }
         @AuraEnabled public Integer dataCategories { get; set; }
         // Raw values of admin-selected content fields, keyed by API name.
         // Used by the article-selector LWC to render dynamic table columns
@@ -121,6 +126,11 @@ public with sharing class KBAssessmentModels {
             this.urlName = (String)article.get('UrlName');
             this.lastModifiedDate = (Datetime)article.get('LastModifiedDate');
             this.publishStatus = (String)article.get('PublishStatus');
+            // Language rides on every wrapper built from the KAV SOQL pipeline
+            // (BASE_KAV_QUERY_FIELDS includes it). Read via getPopulatedFieldsAsMap
+            // so a wrapper built from a projection that omits Language returns
+            // null instead of throwing SObjectException.
+            this.language = (String)article.getPopulatedFieldsAsMap().get('Language');
         }
     }
 

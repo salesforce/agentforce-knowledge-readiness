@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <GenAiPromptTemplate xmlns="http://soap.sforce.com/2006/04/metadata">
-    <activeVersionIdentifier>dIRBZxdJBYVmvmwv4/3DkrD7prMYAANFTVuvFEZTzUI=_1</activeVersionIdentifier>
+    <activeVersionIdentifier>dIRBZxdJBYVmvmwv4/3DkrD7prMYAANFTVuvFEZTzUI=_2</activeVersionIdentifier>
     <developerName>Draft_Merged_Knowledge_Article</developerName>
     <masterLabel>Draft_Merged_Knowledge_Article</masterLabel>
     <overridable>false</overridable>
@@ -31,9 +31,9 @@ Output the merged article body content only, no JSON wrapping.
             <referenceName>Input:Article2_Text</referenceName>
             <required>true</required>
         </inputs>
-        <primaryModel>testTemp0_CM_12l_OKM89276f35</primaryModel>
+        <primaryModel>sfdc_ai__DefaultGPT54</primaryModel>
         <status>Published</status>
-        <versionIdentifier>dIRBZxdJBYVmvmwv4/3DkrD7prMYAANFTVuvFEZTzUI=_1</versionIdentifier>
+        <versionIdentifier>dIRBZxdJBYVmvmwv4/3DkrD7prMYAANFTVuvFEZTzUI=_2</versionIdentifier>
     </templateVersions>
     <type>einstein_gpt__flex</type>
     <visibility>Global</visibility>

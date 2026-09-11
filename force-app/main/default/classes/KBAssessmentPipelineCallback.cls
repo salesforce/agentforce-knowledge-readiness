@@ -184,6 +184,21 @@ public with sharing class KBAssessmentPipelineCallback implements Queueable, Dat
                 // Pipeline_Skip_Reason__c so we don't duplicate it per dim.
                 Boolean pipelineSkipped = String.isNotBlank(a.Pipeline_Skip_Reason__c);
 
+                // For gate-skipped articles the placeholder Duplication/Conflict
+                // rows are deleted above (they never reached Tier 2). `byDim` is
+                // the pre-delete in-memory snapshot from the initial query, so it
+                // still holds those placeholders — and their scores can be low
+                // (KBAssessmentDimensionQueueable's pre-pipeline bulk fetch is
+                // run-agnostic and can inherit a prior run's candidate). Left in,
+                // they leak into computeOverall and drag Overall_Score__c BELOW
+                // every surviving dimension while the LWC renders the dim as N/A.
+                // Mirror the DB delete in memory so the overall renormalises over
+                // only the dims that actually survive (null-skipping, per spec).
+                if (pipelineSkipped) {
+                    if (evaluateDuplication) byDim.remove('Duplication');
+                    if (evaluateConflict) byDim.remove('Conflict');
+                }
+
                 // Per-article default of 100 = "passed the quality gate, no
                 // duplicate/conflict candidates surfaced for this article" =
                 // perfect score on this dimension. This default is only

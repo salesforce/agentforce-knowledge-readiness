@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomMetadata xmlns="http://soap.sforce.com/2006/04/metadata" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+    <label>Fix Language Directive (pl)</label>
+    <protected>false</protected>
+    <values>
+        <field>Text_Key__c</field>
+        <value xsi:type="xsd:string">FIX_LANGUAGE_DIRECTIVE</value>
+    </values>
+    <values>
+        <field>Language_Code__c</field>
+        <value xsi:type="xsd:string">pl</value>
+    </values>
+    <values>
+        <field>Value__c</field>
+        <value xsi:type="xsd:string">polski (Polish). WAŻNE: napisz wszystkie pola wyłącznie w języku polskim. Nie tłumacz treści na angielski ani żaden inny język — cały tekst, tytuły, nagłówki i elementy list muszą być po polsku. Zachowaj angielskie nazwy własne, nazwy produktów i skróty (VPN, MFA, SCIM, EDR itp.) w oryginale, ale cała otaczająca je treść musi być po polsku. Obecność angielskich terminów w źródle NIE oznacza, że artykuł jest po angielsku.</value>
+    </values>
+</CustomMetadata>

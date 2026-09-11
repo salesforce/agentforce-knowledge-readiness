@@ -458,7 +458,6 @@ public with sharing class KBSetupOrchestratorController {
         'searchIndexConfigured' => System.Label.KB_Helptext_Preflight_SearchIndex,
         'contentFieldsSelected' => System.Label.KB_Helptext_Preflight_ContentFields,
         'knowledgeArticlesExist' => System.Label.KB_Helptext_Preflight_ArticlesExist,
-        'bypassPermissionExists' => System.Label.KB_Helptext_Preflight_BypassPermission,
         'contentFieldsMatchIndex' => System.Label.KB_Helptext_Preflight_ContentFieldsMatchIndex
     };
 

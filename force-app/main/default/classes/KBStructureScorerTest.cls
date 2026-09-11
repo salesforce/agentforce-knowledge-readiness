@@ -215,6 +215,34 @@ private class KBStructureScorerTest {
     }
 
     @IsTest
+    static void testLanguageThreadedToPrompt() {
+        // A non-English article's Language must reach the scoring prompt so the
+        // LLM responds in that language and judges grammar against its
+        // conventions (multilingual content assessment).
+        MockPromptTemplateService mock = new MockPromptTemplateService();
+        PromptTemplateService.LLMEvaluationResult llm = new PromptTemplateService.LLMEvaluationResult();
+        llm.score = 80;
+        llm.success = true;
+        mock.mockLLMResult = llm;
+        PromptTemplateService.setMock(mock);
+
+        KBAssessmentModels.ArticleWrapper article = new KBAssessmentModels.ArticleWrapper();
+        article.title = 'Réinitialiser votre mot de passe';
+        article.summary = 'Étapes pour réinitialiser un mot de passe oublié.';
+        article.content = '<h3>Résolution</h3><p>' + 'mot '.repeat(200) + '</p>';
+        article.language = 'fr';
+
+        KBStructureScorer scorer = new KBStructureScorer();
+
+        Test.startTest();
+        scorer.score(article);
+        Test.stopTest();
+
+        Assert.areEqual('fr', mock.lastStructureLanguage,
+            'Article Language must be threaded to the scoring prompt input');
+    }
+
+    @IsTest
     static void testScoreViaArticleWrapper() {
         KBStructureScorer scorer = new KBStructureScorer();
         KBAssessmentModels.ArticleWrapper article = new KBAssessmentModels.ArticleWrapper();

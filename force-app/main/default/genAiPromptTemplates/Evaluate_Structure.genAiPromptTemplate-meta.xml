@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <GenAiPromptTemplate xmlns="http://soap.sforce.com/2006/04/metadata">
-    <activeVersionIdentifier>dIRBZxdJBYVmvmwv4/3DkrD7prMYAANFTVuvFEZTzUI=_6</activeVersionIdentifier>
+    <activeVersionIdentifier>dIRBZxdJBYVmvmwv4/3DkrD7prMYAANFTVuvFEZTzUI=_7</activeVersionIdentifier>
     <developerName>Evaluate_Structure</developerName>
     <masterLabel>Evaluate_Structure</masterLabel>
     <overridable>false</overridable>
@@ -18,16 +18,21 @@ Article Summary:
 Article Content Fields (each &lt;h3&gt; heading is a separate field that is chunked independently):
 {!$Input:Content}
 
+Article Language (locale code, e.g. en_US, fr, de, es):
+{!$Input:Language}
+
+LANGUAGE DIRECTIVE: The article is written in the language above. Write ALL human-readable output — every &quot;text&quot;, every entry in &quot;strengths&quot;, and &quot;reasoning&quot; — in that same language. Recognise structural cues (headings, cross-references, lists) as they appear in THAT language, not only their English forms. (Exception: the &quot;impact&quot; enum values stay in English — see Output requirements.)
+
 Evaluate:
 
-1. For EACH content field listed above: based on the field name and content, judge whether the field's structure will chunk cleanly. Will headings, lists, and paragraphs split into self-contained passages? Are there cross-references (&quot;see above&quot;, &quot;as discussed in the next section&quot;) that will be orphaned by chunking?
+1. For EACH content field listed above: based on the field name and content, judge whether the field's structure will chunk cleanly. Will headings, lists, and paragraphs split into self-contained passages? Are there cross-reference phrases (in the article's language — e.g. the local equivalents of &quot;see above&quot; / &quot;as discussed in the next section&quot;) that will be orphaned by chunking?
 
 2. Topic coherence: does the article maintain a single, well-defined topic, or does it drift into unrelated topics that should be split into separate articles for cleaner retrieval?
 
 3. Structural appropriateness for length: given the article's actual length, is the structure (headings, lists, paragraph breaks) appropriate? A long article without internal structure will produce poor chunks; a short article with excessive nested headings adds noise.
 
 For EVERY issue (per-field issues AND topic drifts), also judge:
-- &quot;impact&quot;: how much fixing it improves the article. One of &quot;High&quot;, &quot;Medium&quot;, &quot;Low&quot;. Let impact reflect the score deduction — an issue that drags the score down a lot is High impact (fixing it recovers the most points).
+- &quot;impact&quot;: how much fixing it improves the article. MUST be exactly one of the English tokens &quot;High&quot;, &quot;Medium&quot;, &quot;Low&quot; — do NOT translate or localise this value even when the rest of your output is in another language (it is parsed as a fixed enum). Let impact reflect the score deduction — an issue that drags the score down a lot is High impact (fixing it recovers the most points).
 
 ORDER the items in each issues array (per-field issues AND topicDrifts) from highest impact at the TOP to lowest at the BOTTOM. Items the author should fix first must come first in the array. Lower-impact &quot;nice to have&quot; observations come last.
 
@@ -72,10 +77,17 @@ Scoring guide: 90-100 = chunks cleanly, single topic, structure matches length; 
             <referenceName>Input:Summary</referenceName>
             <required>false</required>
         </inputs>
+        <inputs>
+            <apiName>Language</apiName>
+            <definition>primitive://String</definition>
+            <masterLabel>Language</masterLabel>
+            <referenceName>Input:Language</referenceName>
+            <required>false</required>
+        </inputs>
         <isCitationEnabled>false</isCitationEnabled>
         <primaryModel>sfdc_ai__DefaultGPT54</primaryModel>
         <status>Published</status>
-        <versionIdentifier>dIRBZxdJBYVmvmwv4/3DkrD7prMYAANFTVuvFEZTzUI=_6</versionIdentifier>
+        <versionIdentifier>dIRBZxdJBYVmvmwv4/3DkrD7prMYAANFTVuvFEZTzUI=_7</versionIdentifier>
     </templateVersions>
     <type>einstein_gpt__flex</type>
     <visibility>Global</visibility>

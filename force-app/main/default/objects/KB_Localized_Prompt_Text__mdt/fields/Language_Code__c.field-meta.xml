@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Language_Code__c</fullName>
+    <description>ISO language code this record's Value__c is written in, e.g. en, pl, de. Matched case-insensitively against the article's Language (base language of a locale like en_US is used). The 'en' record is the fallback used when the article's language has no record for this key.</description>
+    <externalId>false</externalId>
+    <fieldManageability>DeveloperControlled</fieldManageability>
+    <label>Language Code</label>
+    <length>10</length>
+    <required>true</required>
+    <type>Text</type>
+    <unique>false</unique>
+</CustomField>
