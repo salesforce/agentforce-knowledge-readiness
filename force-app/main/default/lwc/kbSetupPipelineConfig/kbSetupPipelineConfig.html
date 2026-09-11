@@ -39,29 +39,6 @@
         </div>
     </div>
 
-    <!-- Pre-publish check (record page) — the single-article draft duplicate
-         scan (verifyDraft) on the Knowledge record page. Conceptually part of
-         duplicate detection, but its top-K lives on KB_Vector_Search_Config__c,
-         so the parent owns the value and edits go out on a separate event.
-         Gated on the KB_PrePublishCheck_Beta perm (via showPrepublish). -->
-    <template lwc:if={showPrepublish}>
-        <div class="slds-section slds-is-open slds-m-bottom_medium">
-            <h4 class="slds-section__title slds-theme_shade slds-p-around_x-small">Pre-publish check (record page)</h4>
-            <div class="slds-section__content slds-p-around_small">
-                <div class="slds-grid slds-wrap slds-gutters">
-                    <div class="slds-col slds-size_1-of-2 slds-p-bottom_small">
-                        <lightning-input
-                            type="number" label="Similar articles to scan (pre-publish)"
-                            value={prepublishTopK}
-                            min="1" max="100" step="1"
-                            field-level-help={helpPrepublishTopK}
-                            onchange={handlePrepublishChange}></lightning-input>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </template>
-
     <!-- Languages -->
     <div class="slds-section slds-is-open slds-m-bottom_medium">
         <h4 class="slds-section__title slds-theme_shade slds-p-around_x-small">Languages</h4>

@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomMetadata xmlns="http://soap.sforce.com/2006/04/metadata" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+    <label>Fix Language Directive (de)</label>
+    <protected>false</protected>
+    <values>
+        <field>Text_Key__c</field>
+        <value xsi:type="xsd:string">FIX_LANGUAGE_DIRECTIVE</value>
+    </values>
+    <values>
+        <field>Language_Code__c</field>
+        <value xsi:type="xsd:string">de</value>
+    </values>
+    <values>
+        <field>Value__c</field>
+        <value xsi:type="xsd:string">Deutsch (German). WICHTIG: Schreibe ALLE Felder ausschließlich auf Deutsch. Übersetze den Inhalt nicht ins Englische oder in eine andere Sprache — der gesamte Text, Titel, Überschriften und Listenelemente müssen auf Deutsch sein. Behalte englische Eigennamen, Produktnamen und Abkürzungen (VPN, MFA, SCIM, EDR usw.) im Original bei, aber der gesamte umgebende Text muss auf Deutsch sein. Das Vorkommen englischer Begriffe in der Quelle macht den Artikel NICHT englisch.</value>
+    </values>
+</CustomMetadata>

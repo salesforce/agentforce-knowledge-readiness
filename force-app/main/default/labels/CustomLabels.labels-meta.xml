@@ -145,14 +145,6 @@
         <value>At least one published article is needed for an assessment run to produce results.</value>
     </labels>
     <labels>
-        <fullName>KB_Helptext_Preflight_BypassPermission</fullName>
-        <categories>kb-readiness,helptext,preflight</categories>
-        <language>en_US</language>
-        <protected>false</protected>
-        <shortDescription>Preflight: Bypass permission helptext</shortDescription>
-        <value>Bypass_AI_Knowledge_Check lets trusted authors publish without running the sidebar consistency checker. Optional.</value>
-    </labels>
-    <labels>
         <fullName>KB_Helptext_Preflight_ContentFieldsMatchIndex</fullName>
         <categories>kb-readiness,helptext,preflight</categories>
         <language>en_US</language>
@@ -755,22 +747,6 @@
         <protected>false</protected>
         <shortDescription>Toast title: setup complete</shortDescription>
         <value>Setup complete</value>
-    </labels>
-    <labels>
-        <fullName>KB_Sidebar_Tab_CheckPublish</fullName>
-        <categories>kb-readiness,sidebar</categories>
-        <language>en_US</language>
-        <protected>false</protected>
-        <shortDescription>Consistency checker: Check &amp; Publish tab</shortDescription>
-        <value>Check &amp; Publish</value>
-    </labels>
-    <labels>
-        <fullName>KB_Sidebar_Tab_CheckConflicts</fullName>
-        <categories>kb-readiness,sidebar</categories>
-        <language>en_US</language>
-        <protected>false</protected>
-        <shortDescription>Consistency checker: Check for Conflicts tab</shortDescription>
-        <value>Check for Conflicts</value>
     </labels>
 
 </CustomLabels>

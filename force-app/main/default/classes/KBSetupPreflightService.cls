@@ -22,7 +22,6 @@
  *   - Search index configuration (Step 4)
  *   - Content field selection (Step 2)
  *   - Published Knowledge articles existing
- *   - Bypass custom permission for the consistency checker
  *
  * Step 1 of the wizard does NOT show these — gating install on a checklist
  * that mostly mirrors "the app is installed" was redundant. Items the install
@@ -114,24 +113,6 @@ public with sharing class KBSetupPreflightService {
             'warning', null
         ));
 
-        // Warning: Bypass permission
-        List<CustomPermission> bypassPerms = [
-            SELECT Id FROM CustomPermission
-            WHERE DeveloperName = 'Bypass_AI_Knowledge_Check'
-            LIMIT 1
-        ];
-        Boolean bypassExists = !bypassPerms.isEmpty();
-        checks.add(buildCheck(
-            'bypassPermissionExists',
-            'Bypass_AI_Knowledge_Check custom permission is available',
-            bypassExists,
-            false,
-            bypassExists
-                ? 'Custom permission is deployed and available.'
-                : 'The Bypass_AI_Knowledge_Check custom permission is missing. Required only for Knowledge Consistency Checker bypass.',
-            'warning', null
-        ));
-
         return checks;
     }
 
@@ -174,7 +155,6 @@ public with sharing class KBSetupPreflightService {
         'dataCloudAvailable' => System.Label.KB_Helptext_Preflight_DataCloud,
         'searchIndexConfigured' => System.Label.KB_Helptext_Preflight_SearchIndex,
         'contentFieldsSelected' => System.Label.KB_Helptext_Preflight_ContentFields,
-        'knowledgeArticlesExist' => System.Label.KB_Helptext_Preflight_ArticlesExist,
-        'bypassPermissionExists' => System.Label.KB_Helptext_Preflight_BypassPermission
+        'knowledgeArticlesExist' => System.Label.KB_Helptext_Preflight_ArticlesExist
     };
 }

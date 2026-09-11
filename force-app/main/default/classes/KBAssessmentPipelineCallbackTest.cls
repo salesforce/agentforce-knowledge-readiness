@@ -186,6 +186,61 @@ private class KBAssessmentPipelineCallbackTest {
     }
 
     @IsTest
+    static void testExecute_PipelineSkipped_OverallExcludesDeletedPlaceholders() {
+        // Regression: a gate-skipped article's placeholder Duplication/Conflict
+        // rows are DELETED, but the callback recomputed Overall_Score__c from the
+        // pre-delete in-memory snapshot — so low placeholder scores (which the
+        // pre-pipeline bulk fetch can inherit from a prior run) leaked in and
+        // dragged the overall BELOW every surviving dimension while the LWC
+        // rendered the dim as N/A. The overall must be the weighted average of
+        // the SURVIVING dims only, i.e. within [min, max] of their scores.
+        KB_Assessment_Run__c run = KBTestDataFactory.insertRun('In Progress', 'Readiness');
+        run.Selected_Dimensions_JSON__c =
+            '["Completeness","Structure","Clarity","Freshness","Duplication","Conflict"]';
+        update run;
+
+        Knowledge__kav kav = KBTestDataFactory.insertArticles(1, 'cb-skip-overall')[0];
+        KB_Article_Assessment__c parent =
+            KBTestDataFactory.insertArticleAssessment(run.Id, kav.Id);
+        parent.Pipeline_Skip_Reason__c = 'Clarity 58 < threshold 60';
+        update parent;
+
+        // Surviving dims: min 58, max 78 → a correct overall lands in [58, 78].
+        // Plus LOW placeholder Dup/Conflict (as if inherited from a prior run)
+        // that the buggy path folded in to produce ~53.9 (below the 58 floor).
+        insert new List<KB_Dimension_Result__c>{
+            new KB_Dimension_Result__c(Article_Assessment__c = parent.Id,
+                Dimension__c = 'Completeness', Score__c = 78),
+            new KB_Dimension_Result__c(Article_Assessment__c = parent.Id,
+                Dimension__c = 'Structure', Score__c = 72),
+            new KB_Dimension_Result__c(Article_Assessment__c = parent.Id,
+                Dimension__c = 'Clarity', Score__c = 58),
+            new KB_Dimension_Result__c(Article_Assessment__c = parent.Id,
+                Dimension__c = 'Freshness', Score__c = 76),
+            new KB_Dimension_Result__c(Article_Assessment__c = parent.Id,
+                Dimension__c = 'Duplication', Score__c = 10),
+            new KB_Dimension_Result__c(Article_Assessment__c = parent.Id,
+                Dimension__c = 'Conflict', Score__c = 8)
+        };
+
+        Test.startTest();
+        new KBAssessmentPipelineCallback(run.Id).execute(null);
+        Test.stopTest();
+
+        KB_Article_Assessment__c reread = [
+            SELECT Overall_Score__c FROM KB_Article_Assessment__c WHERE Id = :parent.Id
+        ];
+        Assert.isNotNull(reread.Overall_Score__c, 'overall computed for skipped article');
+        Assert.isTrue(reread.Overall_Score__c >= 58,
+            'Overall (' + reread.Overall_Score__c + ') must not drop below the ' +
+            'lowest surviving dimension (58) — deleted Dup/Conflict placeholders ' +
+            'must not leak into the average');
+        Assert.isTrue(reread.Overall_Score__c <= 78,
+            'Overall (' + reread.Overall_Score__c + ') cannot exceed the highest ' +
+            'surviving dimension (78)');
+    }
+
+    @IsTest
     static void testAllArticlesSkippedYieldsNullDimAverages() {
  // regression: when EVERY article in the run is excluded
         // from the dedup pipeline by the quality gate, the run-level

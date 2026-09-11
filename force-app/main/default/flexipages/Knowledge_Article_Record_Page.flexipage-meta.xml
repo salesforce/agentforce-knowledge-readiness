@@ -72,8 +72,8 @@
     </flexiPageRegions>
     <!-- Single sidebar card: knowledgeConsistencyChecker — the "Knowledge
          Assessment" panel. A readiness-score header sits above a tabset
-         carrying Issues, Strengths, Duplicates, and (beta-gated) Pre-publish
-         check. Assessment history across versions and the current-state
+         carrying Issues, Strengths, Duplicates & Conflicts, and Preview
+         results. Assessment history across versions and the current-state
          actions now live together in this one card, with the run selector
          driving which run's strengths are shown. -->
     <flexiPageRegions>

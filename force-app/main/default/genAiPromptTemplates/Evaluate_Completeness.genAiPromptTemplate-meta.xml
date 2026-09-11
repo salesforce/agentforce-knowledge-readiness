@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <GenAiPromptTemplate xmlns="http://soap.sforce.com/2006/04/metadata">
-    <activeVersionIdentifier>hgWdFrVOP0XPq1bj1EqT8pXnYQ7MdRb5YhS2aEKy9cQ=_3</activeVersionIdentifier>
+    <activeVersionIdentifier>hgWdFrVOP0XPq1bj1EqT8pXnYQ7MdRb5YhS2aEKy9cQ=_4</activeVersionIdentifier>
     <developerName>Evaluate_Completeness</developerName>
     <masterLabel>Evaluate_Completeness</masterLabel>
     <overridable>false</overridable>
@@ -18,6 +18,11 @@ Article Summary:
 Article Content Fields:
 {!$Input:Content}
 
+Article Language (locale code, e.g. en_US, fr, de, es):
+{!$Input:Language}
+
+LANGUAGE DIRECTIVE: The article is written in the language above. Write ALL human-readable output — every &quot;text&quot;, every entry in &quot;strengths&quot;, and &quot;reasoning&quot; — in that same language. Recognise redirects, hedging, and breadcrumb-style summaries as they are phrased in THAT language, not only their English forms. (Exception: the &quot;impact&quot; enum values stay in English — see Output requirements.)
+
 Evaluate the following:
 
 1. For EACH content field listed above: Based on the field name, infer its intended purpose. Does it contain substantive content appropriate for that purpose? If it directs the reader elsewhere, does it provide a substantive answer first or does it substitute a redirect for an answer?
@@ -27,7 +32,7 @@ Evaluate the following:
 3. Summary quality: Does the summary describe what questions this article can answer (its scope) without stating the answers themselves? Is it concise enough to serve as a retrieval breadcrumb prepended to each chunk?
 
 For EVERY issue, also judge:
-- &quot;impact&quot;: how much fixing this issue will improve the article. One of &quot;High&quot;, &quot;Medium&quot;, &quot;Low&quot;. Let impact reflect the score deduction — an issue that drags the score down a lot is High impact (fixing it recovers the most points).
+- &quot;impact&quot;: how much fixing this issue will improve the article. MUST be exactly one of the English tokens &quot;High&quot;, &quot;Medium&quot;, &quot;Low&quot; — do NOT translate or localise this value even when the rest of your output is in another language (it is parsed as a fixed enum). Let impact reflect the score deduction — an issue that drags the score down a lot is High impact (fixing it recovers the most points).
 
 ORDER the items in each issues array (per-field issues AND summaryIssues) from highest impact at the TOP to lowest at the BOTTOM. Items the author should fix first must come first in the array. Lower-impact &quot;nice to have&quot; observations come last.
 
@@ -72,10 +77,17 @@ Scoring guide: 90-100 = all fields contain substantive, specific, directly usabl
             <referenceName>Input:Summary</referenceName>
             <required>false</required>
         </inputs>
+        <inputs>
+            <apiName>Language</apiName>
+            <definition>primitive://String</definition>
+            <masterLabel>Language</masterLabel>
+            <referenceName>Input:Language</referenceName>
+            <required>false</required>
+        </inputs>
         <isCitationEnabled>false</isCitationEnabled>
         <primaryModel>sfdc_ai__DefaultGPT54</primaryModel>
         <status>Published</status>
-        <versionIdentifier>hgWdFrVOP0XPq1bj1EqT8pXnYQ7MdRb5YhS2aEKy9cQ=_3</versionIdentifier>
+        <versionIdentifier>hgWdFrVOP0XPq1bj1EqT8pXnYQ7MdRb5YhS2aEKy9cQ=_4</versionIdentifier>
     </templateVersions>
     <type>einstein_gpt__flex</type>
     <visibility>Global</visibility>

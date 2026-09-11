@@ -146,7 +146,7 @@ public with sharing class Tier3PairEvaluator {
         }
         Map<Id, Knowledge__kav> articleMap = new Map<Id, Knowledge__kav>();
         for (Knowledge__kav art : [
-            SELECT Id, Title, Summary, KnowledgeArticleId, PublishStatus
+            SELECT Id, Title, Summary, KnowledgeArticleId, PublishStatus, Language
             FROM Knowledge__kav
             WHERE Id IN :allIds
         ]) {
@@ -197,17 +197,29 @@ public with sharing class Tier3PairEvaluator {
 
  // only compare CURRENT PUBLISHED articles. A Draft, an
             // Archived article, or a superseded prior version must never be
-            // flagged as a duplicate. "Online" is the whole test: an article has
-            // at most one Online version, so this also stops a prior version
-            // being flagged as a duplicate of its own current version (same
-            // KnowledgeArticleId, different KAV id — which the version-id
-            // self-pair guard above misses). Uses KBPublishStatusHelper (shared
+            // flagged as a duplicate. Uses KBPublishStatusHelper (shared
             // null-safe, case-insensitive classifier). This gate runs BEFORE the
             // budget reservation so a non-published pair is skipped, never
             // deferred to a continuation.
+            //
+            // Cross-language / same-master guard: two KAVs sharing a
+            // KnowledgeArticleId are translations (or a straggler prior
+            // version) of the same master and are not comparable — the
+            // "one Online per article" invariant is per-(article, language),
+            // so translations each carry their own Online, latest-version
+            // KAV and the publish gate above cannot catch them. Two KAVs
+            // with different Language codes are also not comparable: a
+            // mono-lingual retrieval index only searches one language at
+            // a time, so a Japanese article surfacing as a "duplicate" of
+            // an English one is noise. Layer A (Tier 1 primary) filters
+            // these at the vector-search boundary; this is the defensive
+            // backstop for cached Knowledge_Pair_Evaluation__c rows and
+            // any pipeline replay path.
             if (targetArticle == null || finalistArticle == null
                 || !KBPublishStatusHelper.isOnline(targetArticle.PublishStatus)
-                || !KBPublishStatusHelper.isOnline(finalistArticle.PublishStatus)) {
+                || !KBPublishStatusHelper.isOnline(finalistArticle.PublishStatus)
+                || targetArticle.KnowledgeArticleId == finalistArticle.KnowledgeArticleId
+                || targetArticle.Language != finalistArticle.Language) {
                 r.skippedPairs++; continue;
             }
 

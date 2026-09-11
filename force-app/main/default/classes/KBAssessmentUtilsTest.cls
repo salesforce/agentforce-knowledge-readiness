@@ -572,4 +572,28 @@ private class KBAssessmentUtilsTest {
         Assert.isTrue(phrases.size() <= 10, 'Should not exceed requested limit');
         Assert.isTrue(phrases.size() > 0, 'Should return available phrases');
     }
+
+    @IsTest
+    static void testScriptAwareCounting() {
+        // Space-delimited scripts are detected as such; CJK/Thai are not.
+        Assert.isFalse(KBAssessmentUtils.isNonSpaceDelimited('How to reset your password'), 'English is space-delimited');
+        Assert.isFalse(KBAssessmentUtils.isNonSpaceDelimited('كيفية تقديم تقارير النفقات'), 'Arabic is space-delimited');
+        Assert.isTrue(KBAssessmentUtils.isNonSpaceDelimited('重設您的密碼'), 'Chinese is non-space-delimited');
+        Assert.isTrue(KBAssessmentUtils.isNonSpaceDelimited('リモートアクセスの設定'), 'Japanese is non-space-delimited');
+        Assert.isTrue(KBAssessmentUtils.isNonSpaceDelimited('นโยบายการลาพักร้อน'), 'Thai is non-space-delimited');
+
+        Assert.areEqual(6, KBAssessmentUtils.countCjkThaiChars('重設您的密碼'), 'Counts 6 Han characters');
+
+        // effectiveWordCount: whitespace words for English, char-derived for CJK.
+        Assert.areEqual(5, KBAssessmentUtils.effectiveWordCount('How to reset your password'), 'English -> 5 words');
+        Assert.isTrue(KBAssessmentUtils.effectiveWordCount('重設您的密碼') >= 3,
+            '6-char Chinese title normalizes to >= 3 word-equivalents (passes the title gate)');
+        Assert.areEqual(0, KBAssessmentUtils.effectiveWordCount('   '), 'Blank -> 0');
+    }
+
+    @IsTest
+    static void testGetSentencesHandlesCjkTerminators() {
+        List<String> s = KBAssessmentUtils.getSentences('第一句話。第二句話！第三句話？');
+        Assert.areEqual(3, s.size(), 'Splits on CJK fullwidth terminators 。！？');
+    }
 }

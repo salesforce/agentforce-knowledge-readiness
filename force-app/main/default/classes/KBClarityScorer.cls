@@ -39,7 +39,7 @@
  * ambiguous-reference regex, passive-voice regex, sentence-complexity
  * thresholds) — the LLM handles these in context better than regex.
  */
-public with sharing class KBClarityScorer extends KBScorerBase {
+public virtual with sharing class KBClarityScorer extends KBScorerBase {
 
     // Score floor when the no-content gate fails.
     @TestVisible
@@ -62,24 +62,26 @@ public with sharing class KBClarityScorer extends KBScorerBase {
         return scoreClarity(
             article == null ? null : article.content,
             article == null ? null : article.title,
-            article == null ? null : article.summary
+            article == null ? null : article.summary,
+            article == null ? null : article.language
         );
     }
 
     /**
      * @TestVisible 2-arg form preserved for the existing test suite (which
-     * supplies content + title primitives). Delegates with a null Summary.
+     * supplies content + title primitives). Delegates with a null Summary/Language.
      */
     @TestVisible
     private KBAssessmentModels.DimensionScore scoreClarity(String content, String title) {
-        return scoreClarity(content, title, null);
+        return scoreClarity(content, title, null, null);
     }
 
     /**
-     * Title and Summary are threaded as their own dedicated LLM inputs (issue
- * never folded into the body Content.
+     * Title and Summary are threaded as their own dedicated LLM inputs — never
+     * folded into the body Content. Language drives the per-language scoring
+     * directive so a non-English article is judged in its own language.
      */
-    private KBAssessmentModels.DimensionScore scoreClarity(String content, String title, String summary) {
+    private KBAssessmentModels.DimensionScore scoreClarity(String content, String title, String summary, String language) {
         KBAssessmentModels.DimensionScore result = new KBAssessmentModels.DimensionScore();
 
         if (String.isBlank(content)) {
@@ -89,8 +91,6 @@ public with sharing class KBClarityScorer extends KBScorerBase {
             result.scorerMode = MODE_DETERMINISTIC; // gate-fail skips the LLM
             return result;
         }
-
-        String plainContent = KBAssessmentUtils.stripHtml(content);
 
         // Try LLM; if it succeeds, its score wins. Otherwise fall back to a
         // baseline score.
@@ -102,7 +102,12 @@ public with sharing class KBClarityScorer extends KBScorerBase {
         KBAssessmentModels.ArticleWrapper llmArticle = new KBAssessmentModels.ArticleWrapper();
         llmArticle.title = title;
         llmArticle.summary = summary;
-        llmArticle.content = plainContent;
+        // Pass RAW content — the base llmContent() seam strips HTML exactly once.
+        // Pre-stripping here double-stripped: stripHtml is not idempotent on
+        // entity-encoded markup (&lt;tag&gt; decodes to <tag> on the first pass,
+        // then a second pass deletes it as if it were a real tag).
+        llmArticle.content = content;
+        llmArticle.language = language;
         result = enhanceWithLLM(result, llmArticle);
 
         if (result.score == null) {
@@ -116,61 +121,15 @@ public with sharing class KBClarityScorer extends KBScorerBase {
         return result;
     }
 
-    // ==================== LLM Enhancement ====================
+    // ==================== LLM Seam ====================
+    // The call/merge/score flow lives in KBScorerBase.enhanceWithLLM; Clarity
+    // reads plain text, so it keeps the base's HTML-stripping llmContent default.
 
-    /**
-     * Single LLM call to Evaluate_Clarity. When the LLM succeeds, its 0-100
-     * score becomes the dimension score directly; issues/strengths from the
-     * LLM are surfaced as user feedback.
-     */
-    protected override KBAssessmentModels.DimensionScore enhanceWithLLM(
-        KBAssessmentModels.DimensionScore deterministicResult,
-        KBAssessmentModels.ArticleWrapper article
-    ) {
-        if (this.promptService == null) {
-            return deterministicResult;
-        }
-        try {
-            PromptTemplateService.LLMEvaluationResult llmResult =
-                this.promptService.evaluateClarity(
-                    article.title, article.content, article.summary
-                );
+    protected override String scoringTemplateName() {
+        return 'Evaluate_Clarity';
+    }
 
-            if (llmResult == null || !llmResult.success) {
-                return deterministicResult;
-            }
-
-            Set<String> existingIssues = new Set<String>(deterministicResult.issues);
-            // Prefer the parallel issueAnalyses list so impact rides along into
-            // KB_Dimension_Analysis__c. Fall back to plain issue strings only
-            // when the LLM didn't emit per-issue severity (older response shape,
- // defensive). Items surface verbatim — no source-path prefix.
-            if (llmResult.issueAnalyses != null && !llmResult.issueAnalyses.isEmpty()) {
-                for (KBAssessmentModels.IssueAnalysis ia : llmResult.issueAnalyses) {
-                    if (ia == null || String.isBlank(ia.text)) continue;
-                    if (existingIssues.contains(ia.text)) continue;
-                    deterministicResult.addIssue(ia.text, ia.impact, ia.effort, ia.priority);
-                }
-            } else {
-                for (String issue : llmResult.issues) {
-                    if (String.isNotBlank(issue) && !existingIssues.contains(issue)) {
-                        deterministicResult.addIssue(issue);
-                    }
-                }
-            }
-            Set<String> existingStrengths = new Set<String>(deterministicResult.strengths);
-            for (String strength : llmResult.strengths) {
-                if (String.isNotBlank(strength) && !existingStrengths.contains(strength)) {
-                    deterministicResult.strengths.add(strength);
-                }
-            }
-
-            // LLM score wins — it has already judged severity in context.
-            deterministicResult.score = llmResult.score;
-            return deterministicResult;
-        } catch (Exception e) {
-            System.debug(LoggingLevel.ERROR, 'Clarity LLM enhancement failed: ' + e.getMessage());
-            return deterministicResult;
-        }
+    protected override String evaluationType() {
+        return 'clarity';
     }
 }

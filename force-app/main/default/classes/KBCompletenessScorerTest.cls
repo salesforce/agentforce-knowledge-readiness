@@ -46,6 +46,34 @@ private class KBCompletenessScorerTest {
     }
 
     @IsTest
+    static void testChineseArticleNotGateFailedOnWordCount() {
+        // A well-formed Traditional Chinese article: the 6-char title and the
+        // summary have no whitespace, so the old word-count / char-length gates
+        // would hard-fail it. Script-aware gating must let it through.
+        KBCompletenessScorer scorer = new KBCompletenessScorer();
+
+        Test.startTest();
+        KBAssessmentModels.DimensionScore result = scorer.scoreCompleteness(
+            '重設您的密碼',
+            '本文說明如何重設您的密碼以及在遭到鎖定時聯絡服務台。',
+            '若要重設密碼，請前往身分入口網站並完成多重驗證挑戰。'.repeat(8),
+            true, false, 1
+        );
+        Test.stopTest();
+
+        Assert.isTrue(result.score > KBCompletenessScorer.GATE_FAIL_SCORE,
+            'A well-formed Chinese article must not hard-fail on whitespace word-count');
+        for (String issue : result.issues) {
+            Assert.isFalse(issue.contains('too few words'),
+                'CJK title must not trip the too-few-words gate');
+            Assert.isFalse(issue.contains('Title is too short'),
+                'CJK title must not trip the Latin char-length floor');
+            Assert.isFalse(issue.contains('Summary is too brief'),
+                'CJK summary must not be mis-sized as too brief');
+        }
+    }
+
+    @IsTest
     static void testGateFailMissingTitle() {
         KBCompletenessScorer scorer = new KBCompletenessScorer();
 

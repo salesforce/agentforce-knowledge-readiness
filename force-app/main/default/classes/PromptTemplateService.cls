@@ -21,7 +21,6 @@
  * Uses ConnectApi.EinsteinLLM.generateMessagesForPromptTemplate().
  *
  * Expected Prompt Builder Templates (configured in UI):
- * - Draft_Evaluator: Accepts draftText + similarChunks, returns JSON with hasConflict and conflicts array
  * - Published_Anomaly_Evaluator: Accepts articleAText + articleBText, returns JSON with isAnomaly, anomalyType, reasoning
  * - Triage_Duplicate_Candidates: Accepts TargetTitle + TargetSummary + CandidateList, returns top_candidates positional indexes
  * - Extract_Article_Facts: Accepts TextChunk, returns bulleted fact list
@@ -141,22 +140,6 @@ public virtual class PromptTemplateService {
         }
         instance = new PromptTemplateService();
         return instance;
-    }
-
-    /**
-     * Evaluates a draft article against similar published articles.
-     * Invokes the Draft_Evaluator prompt template.
-     */
-    public virtual DraftEvaluationResult evaluateDraft(
-        String draftText,
-        List<VectorSearchResult> similarArticles
-    ) {
-        Map<String, ConnectApi.WrappedValue> inputParams = new Map<String, ConnectApi.WrappedValue>();
-        inputParams.put('Input:draftText', toWrappedValue(draftText));
-        inputParams.put('Input:similarChunks', toWrappedValue(JSON.serialize(similarArticles)));
-
-        String responseText = invokePromptTemplate('Draft_Evaluator', inputParams);
-        return parseDraftEvaluationResult(responseText);
     }
 
     /**
@@ -287,36 +270,6 @@ public virtual class PromptTemplateService {
     }
 
     @TestVisible
-    private DraftEvaluationResult parseDraftEvaluationResult(String jsonResponse) {
-        DraftEvaluationResult result = new DraftEvaluationResult();
-
-        try {
-            Map<String, Object> parsed = (Map<String, Object>) JSON.deserializeUntyped(jsonResponse);
-            result.hasConflict = (Boolean) parsed.get('hasConflict');
-            result.conflicts = new List<ConflictDetail>();
-
-            if (parsed.containsKey('conflicts') && parsed.get('conflicts') != null) {
-                List<Object> conflictList = (List<Object>) parsed.get('conflicts');
-                for (Object c : conflictList) {
-                    Map<String, Object> conflictMap = (Map<String, Object>) c;
-                    ConflictDetail detail = new ConflictDetail();
-                    detail.conflictingArticleId = (String) conflictMap.get('articleId');
-                    detail.conflictingArticleTitle = (String) conflictMap.get('articleTitle');
-                    detail.conflictType = (String) conflictMap.get('type');
-                    detail.reasoning = (String) conflictMap.get('reasoning');
-                    result.conflicts.add(detail);
-                }
-            }
-        } catch (Exception e) {
-            throw new KnowledgeAIException(
-                'Failed to parse draft evaluation response: ' + e.getMessage()
-            );
-        }
-
-        return result;
-    }
-
-    @TestVisible
     private AnomalyEvaluationResult parseAnomalyEvaluationResult(String jsonResponse) {
         AnomalyEvaluationResult result = new AnomalyEvaluationResult();
 
@@ -339,27 +292,76 @@ public virtual class PromptTemplateService {
     // =====================================================================
 
     /**
+     * Shared entry point for the three per-article scoring templates
+     * (Evaluate_Structure / Evaluate_Clarity / Evaluate_Completeness). The
+     * scorer layer assembles a loose `Input:*` map — Title, Summary, Content,
+     * and (multilingual) an optional Language directive — and this method wraps,
+     * invokes, and parses it uniformly. Centralizing the invoke/parse/catch here
+     * lets KBScorerBase drive all LLM dimensions through a single seam instead of
+     * three near-identical per-dimension methods.
+     *
+     * `Input:Content` is truncated to the configured character budget here (not
+     * by the caller) so the content-limit knob has a single owner; every other
+     * input is passed through verbatim. A blank value is wrapped as an empty
+     * string. On any failure the result carries a "<Type> evaluation failed: …"
+     * errorMessage and null score (the "no LLM opinion" sentinel).
+     */
+    public virtual LLMEvaluationResult evaluateArticle(
+        String templateApiName,
+        Map<String, String> inputs,
+        String evaluationType
+    ) {
+        Map<String, ConnectApi.WrappedValue> inputParams = new Map<String, ConnectApi.WrappedValue>();
+        if (inputs != null) {
+            for (String key : inputs.keySet()) {
+                String value = inputs.get(key);
+                if (key == 'Input:Content') {
+                    value = truncateForLLM(value, contentCharLimit);
+                }
+                inputParams.put(key, toWrappedValue(value == null ? '' : value));
+            }
+        }
+
+        try {
+            String responseText = invokePromptTemplate(templateApiName, inputParams);
+            return parseLLMEvaluationResult(responseText, evaluationType);
+        } catch (Exception e) {
+            LLMEvaluationResult result = new LLMEvaluationResult();
+            result.errorMessage = capitalize(evaluationType) + ' evaluation failed: ' + e.getMessage();
+            return result;
+        }
+    }
+
+    private static String capitalize(String value) {
+        if (String.isBlank(value)) {
+            return value;
+        }
+        return value.substring(0, 1).toUpperCase() + value.substring(1);
+    }
+
+    /**
      * Evaluates structure / chunkability. The LLM judges chunk
      * self-containment, structural appropriateness, and topic coherence.
      *
  * Title and Summary are passed as their own dedicated inputs
      * never folded into the body Content — so the structural signal of a strong
      * title/summary is never lost when the admin-selected body fields are thin.
+     *
+     * Thin delegator over evaluateArticle — retained for direct callers/tests.
+     * `language` drives Input:Language (default 'en_US' when blank), matching the
+     * Input:* map the scorer seam (KBScorerBase.assembleLlmInputs) assembles.
      */
-    public virtual LLMEvaluationResult evaluateStructure(String title, String content, String summary) {
-        Map<String, ConnectApi.WrappedValue> inputParams = new Map<String, ConnectApi.WrappedValue>();
-        inputParams.put('Input:Title', toWrappedValue(String.isBlank(title) ? '' : title));
-        inputParams.put('Input:Summary', toWrappedValue(String.isNotBlank(summary) ? summary : ''));
-        inputParams.put('Input:Content', toWrappedValue(truncateForLLM(content, contentCharLimit)));
-
-        try {
-            String responseText = invokePromptTemplate('Evaluate_Structure', inputParams);
-            return parseLLMEvaluationResult(responseText, 'structure');
-        } catch (Exception e) {
-            LLMEvaluationResult result = new LLMEvaluationResult();
-            result.errorMessage = 'Structure evaluation failed: ' + e.getMessage();
-            return result;
-        }
+    public virtual LLMEvaluationResult evaluateStructure(String title, String content, String summary, String language) {
+        return evaluateArticle(
+            'Evaluate_Structure',
+            new Map<String, String>{
+                'Input:Title' => String.isBlank(title) ? '' : title,
+                'Input:Summary' => String.isNotBlank(summary) ? summary : '',
+                'Input:Content' => content,
+                'Input:Language' => String.isBlank(language) ? 'en_US' : language
+            },
+            'structure'
+        );
     }
 
     /**
@@ -368,41 +370,42 @@ public virtual class PromptTemplateService {
      *
      * Title and Summary are passed as their own dedicated inputs — never folded
      * into the body Content.
+     *
+     * Thin delegator over evaluateArticle — retained for direct callers/tests.
      */
     public virtual LLMEvaluationResult evaluateClarity(
         String title,
         String content,
-        String summary
+        String summary,
+        String language
     ) {
-        Map<String, ConnectApi.WrappedValue> inputParams = new Map<String, ConnectApi.WrappedValue>();
-        inputParams.put('Input:Title', toWrappedValue(String.isBlank(title) ? '' : title));
-        inputParams.put('Input:Summary', toWrappedValue(String.isNotBlank(summary) ? summary : ''));
-        inputParams.put('Input:Content', toWrappedValue(truncateForLLM(content, contentCharLimit)));
-
-        try {
-            String responseText = invokePromptTemplate('Evaluate_Clarity', inputParams);
-            return parseLLMEvaluationResult(responseText, 'clarity');
-        } catch (Exception e) {
-            LLMEvaluationResult result = new LLMEvaluationResult();
-            result.errorMessage = 'Clarity evaluation failed: ' + e.getMessage();
-            return result;
-        }
+        return evaluateArticle(
+            'Evaluate_Clarity',
+            new Map<String, String>{
+                'Input:Title' => String.isBlank(title) ? '' : title,
+                'Input:Summary' => String.isNotBlank(summary) ? summary : '',
+                'Input:Content' => content,
+                'Input:Language' => String.isBlank(language) ? 'en_US' : language
+            },
+            'clarity'
+        );
     }
 
-    public virtual LLMEvaluationResult evaluateCompleteness(String title, String structuredContent, String summary) {
-        Map<String, ConnectApi.WrappedValue> inputParams = new Map<String, ConnectApi.WrappedValue>();
-        inputParams.put('Input:Title', toWrappedValue(title));
-        inputParams.put('Input:Content', toWrappedValue(truncateForLLM(structuredContent, contentCharLimit)));
-        inputParams.put('Input:Summary', toWrappedValue(String.isNotBlank(summary) ? summary : ''));
-
-        try {
-            String responseText = invokePromptTemplate('Evaluate_Completeness', inputParams);
-            return parseLLMEvaluationResult(responseText, 'completeness');
-        } catch (Exception e) {
-            LLMEvaluationResult result = new LLMEvaluationResult();
-            result.errorMessage = 'Completeness evaluation failed: ' + e.getMessage();
-            return result;
-        }
+    /**
+     * Thin delegator over evaluateArticle — retained for direct callers/tests.
+     * `language` drives Input:Language (default 'en_US' when blank).
+     */
+    public virtual LLMEvaluationResult evaluateCompleteness(String title, String structuredContent, String summary, String language) {
+        return evaluateArticle(
+            'Evaluate_Completeness',
+            new Map<String, String>{
+                'Input:Title' => String.isBlank(title) ? '' : title,
+                'Input:Content' => structuredContent,
+                'Input:Summary' => String.isNotBlank(summary) ? summary : '',
+                'Input:Language' => String.isBlank(language) ? 'en_US' : language
+            },
+            'completeness'
+        );
     }
 
     /**
@@ -630,23 +633,6 @@ public virtual class PromptTemplateService {
             this.issues.add(text);
             this.issueAnalyses.add(new KBAssessmentModels.IssueAnalysis(text, impact, effort, priority));
         }
-    }
-
-    public class DraftEvaluationResult {
-        @AuraEnabled public Boolean hasConflict;
-        @AuraEnabled public List<ConflictDetail> conflicts;
-
-        public DraftEvaluationResult() {
-            this.hasConflict = false;
-            this.conflicts = new List<ConflictDetail>();
-        }
-    }
-
-    public class ConflictDetail {
-        @AuraEnabled public String conflictingArticleId;
-        @AuraEnabled public String conflictingArticleTitle;
-        @AuraEnabled public String conflictType;
-        @AuraEnabled public String reasoning;
     }
 
     public class AnomalyEvaluationResult {

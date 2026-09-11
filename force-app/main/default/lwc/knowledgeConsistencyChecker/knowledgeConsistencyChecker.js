@@ -16,33 +16,19 @@
  */
 import { LightningElement, api, wire, track } from 'lwc';
 import { refreshApex } from '@salesforce/apex';
-import { getRecord, getFieldValue } from 'lightning/uiRecordApi';
 import { NavigationMixin } from 'lightning/navigation';
 import { ShowToastEvent } from 'lightning/platformShowToastEvent';
-import hasBypassPermission from '@salesforce/customPermission/Bypass_AI_Knowledge_Check';
-import hasPrePublishCheckBeta from '@salesforce/customPermission/KB_PrePublishCheck_Beta';
-import verifyDraft from '@salesforce/apex/KnowledgeAIGovernanceService.verifyDraft';
-import publishArticleWithAudit from '@salesforce/apex/KnowledgeAIGovernanceService.publishArticleWithAudit';
-import createDraftVersion from '@salesforce/apex/KnowledgeAIGovernanceService.createDraftVersion';
 import getArticleStatus from '@salesforce/apex/KnowledgeAIGovernanceService.getArticleStatus';
 import getLatestAssessmentForArticle from '@salesforce/apex/KBAssessmentController.getLatestAssessmentForArticle';
 import getRunsAndAnalysesForArticle from '@salesforce/apex/KBAssessmentController.getRunsAndAnalysesForArticle';
 import getImprovementsForArticle from '@salesforce/apex/KBEnrichmentController.getImprovementsForArticle';
 import previewArticleScore from '@salesforce/apex/KBAssessmentController.previewArticleScore';
-import getSnapshot from '@salesforce/apex/KBDiagnosticsController.getSnapshot';
-import TAB_CHECK_PUBLISH from '@salesforce/label/c.KB_Sidebar_Tab_CheckPublish';
-import TAB_CHECK_CONFLICTS from '@salesforce/label/c.KB_Sidebar_Tab_CheckConflicts';
-import TITLE_FIELD from '@salesforce/schema/Knowledge__kav.Title';
-import KNOWLEDGE_ARTICLE_ID_FIELD from '@salesforce/schema/Knowledge__kav.KnowledgeArticleId';
 import READINESS_NO_TITLE from '@salesforce/label/c.KB_Sidebar_Readiness_NoAssessment_Title';
 import READINESS_NO_BODY from '@salesforce/label/c.KB_Sidebar_Readiness_NoAssessment_Body';
 import READINESS_NO_CTA from '@salesforce/label/c.KB_Sidebar_Readiness_NoAssessment_CTA';
 import READINESS_SCORE_LABEL from '@salesforce/label/c.KB_Sidebar_Readiness_Score_Label';
 import { impactBadgeClass, compareImpactDesc, compareImpactAsc } from 'c/kbImpact';
 import KbFixIssuesModal from 'c/kbFixIssuesModal';
-import LightningConfirm from 'lightning/confirm';
-
-const FIELDS = [TITLE_FIELD, KNOWLEDGE_ARTICLE_ID_FIELD];
 
 // Severity model reduced to Impact only (High/Medium/Low) — Priority and
 // Effort were dropped from the analysis row. Impact is the single badge.
@@ -126,14 +112,8 @@ export default class KnowledgeConsistencyChecker extends NavigationMixin(Lightni
         }
     }
 
-    // Pre-publish check tab state — verifyDraft lifecycle.
-    isProcessing = false;
-    isClean = false;
-    hasConflicts = false;
-    hasError = false;
-    errorMessage = '';
-    conflicts = [];
-    bypassReason = '';
+    // PublishStatus of the viewed version — drives draft-vs-published
+    // navigation behavior (see handleEditAsDraft).
     articleStatus;
 
     // Issues tab — latest assessment + open recs feeding the Fix modal.
@@ -170,16 +150,11 @@ export default class KnowledgeConsistencyChecker extends NavigationMixin(Lightni
     showResolvedRecs = false;
     showDiscardedRecs = false;
 
-    // Vector search status — drives the SOQL-fallback advisory banner.
-    _vectorSearchActive = false;
-    _usingSoqlFallback = false;
-
     // Tab + filter labels
     tabIssuesLabel = 'Issues';
     tabStrengthsLabel = 'Strengths';
     tabDuplicatesLabel = 'Duplicates & Conflicts';
     tabPreviewLabel = 'Preview results';
-    tabPrePublishLabel = 'Pre-publish check';
     previewIssuesTabLabel = 'Issues';
     previewStrengthsTabLabel = 'Strengths';
     readinessNoTitle = READINESS_NO_TITLE;
@@ -189,9 +164,6 @@ export default class KnowledgeConsistencyChecker extends NavigationMixin(Lightni
 
     dimensionOptions = DIMENSION_OPTIONS;
     sortOptions = SORT_OPTIONS;
-
-    @wire(getRecord, { recordId: '$recordId', fields: FIELDS })
-    article;
 
     @wire(getArticleStatus, { articleVersionId: '$recordId' })
     wiredStatus({ data, error }) {
@@ -259,17 +231,6 @@ export default class KnowledgeConsistencyChecker extends NavigationMixin(Lightni
             this.runsError = error?.body?.message || error?.message || 'Could not load runs';
             this.selectedRunId = null;
         }
-    }
-
-    connectedCallback() {
-        getSnapshot()
-            .then((data) => {
-                const vp = data?.vectorProvider;
-                this._vectorSearchActive = !!(vp && vp.isActive && vp.searchIndexName);
-                this._usingSoqlFallback = !this._vectorSearchActive
-                    || vp?.implementationClass === 'Tier1SOQLFallbackService';
-            })
-            .catch(() => {});
     }
 
     // ── Issues tab ─────────────────────────────────────────────────────
@@ -963,249 +924,7 @@ export default class KnowledgeConsistencyChecker extends NavigationMixin(Lightni
         return this.previewStrengths.length;
     }
 
-    // ── Pre-publish check tab — existing flow preserved ───────────────
-
-    get canBypass() {
-        return hasBypassPermission;
-    }
-
-    // Beta gate for the Pre-publish check tab. The Issues / Strengths /
-    // Duplicates tabs always render; this controls only whether a fourth
-    // Pre-publish tab is added. No special single-tab wrapper handling is
-    // needed — the tabset is never reduced to one tab.
-    get showPrePublishTab() {
-        return hasPrePublishCheckBeta === true;
-    }
-
-    get isPublished() {
-        return this.articleStatus === 'Online';
-    }
-
     get isDraft() {
         return this.articleStatus === 'Draft';
-    }
-
-    get conflictCount() {
-        return this.conflicts.length;
-    }
-
-    get reviewedCount() {
-        return this.conflicts.filter((c) => c.reviewed).length;
-    }
-
-    get allReviewed() {
-        return this.conflicts.length > 0 && this.conflicts.every((c) => c.reviewed);
-    }
-
-    get reviewProgress() {
-        if (this.conflicts.length === 0) return 0;
-        return Math.round((this.reviewedCount / this.conflicts.length) * 100);
-    }
-
-    get bypassReasonEmpty() {
-        return !this.bypassReason || this.bypassReason.trim() === '';
-    }
-
-    get showIdleState() {
-        return !this.isProcessing && !this.isClean && !this.hasConflicts && !this.hasError;
-    }
-
-    get knowledgeArticleId() {
-        return this.article?.data
-            ? getFieldValue(this.article.data, KNOWLEDGE_ARTICLE_ID_FIELD)
-            : null;
-    }
-
-    get checkButtonLabel() {
-        return this.isDraft ? TAB_CHECK_PUBLISH : TAB_CHECK_CONFLICTS;
-    }
-
-    get checkButtonDescription() {
-        return this.isDraft
-            ? 'Run an AI check against the published knowledge base before publishing this draft. Catches duplicates and contradictions.'
-            : 'Run an AI check to find duplicates or contradictions with other published articles.';
-    }
-
-    get isCheckButtonDisabled() {
-        return this.isProcessing;
-    }
-
-    get usingSoqlFallback() {
-        return this._usingSoqlFallback;
-    }
-
-    async handleVerifyDraft() {
-        this.resetState();
-        this.isProcessing = true;
-
-        try {
-            const result = await verifyDraft({ articleVersionId: this.recordId });
-
-            if (result.hasConflict && result.conflicts && result.conflicts.length > 0) {
-                this.hasConflicts = true;
-                this.conflicts = result.conflicts.map((c, index) => ({
-                    ...c,
-                    id: c.conflictingArticleId || `conflict-${index}`,
-                    reviewed: false,
-                    badgeClass: this.getBadgeClass(c.conflictType)
-                }));
-            } else {
-                this.isClean = true;
-            }
-        } catch (error) {
-            this.hasError = true;
-            this.errorMessage =
-                error.body?.message || 'AI consistency check failed. You may retry or publish with caution.';
-        } finally {
-            this.isProcessing = false;
-        }
-    }
-
-    handleConflictReviewToggle(event) {
-        const index = parseInt(event.target.dataset.index, 10);
-        this.conflicts = this.conflicts.map((c, i) => {
-            if (i === index) {
-                return { ...c, reviewed: event.target.checked };
-            }
-            return c;
-        });
-    }
-
-    async handlePublish() {
-        await this.doPublish(null);
-    }
-
-    async handleBypassPublish() {
-        const bypassJson = JSON.stringify({
-            reason: this.bypassReason,
-            conflictsFound: this.conflicts.length,
-            conflictsReviewed: this.conflicts.map((c) => ({
-                articleId: c.conflictingArticleId,
-                articleTitle: c.conflictingArticleTitle,
-                type: c.conflictType,
-                reasoning: c.reasoning,
-                managerReviewed: c.reviewed
-            }))
-        });
-        await this.doPublish(bypassJson);
-    }
-
-    async handlePublishWithoutCheck() {
-        const bypassJson = JSON.stringify({
-            reason: 'Published without AI check due to system error',
-            checkSkipped: true
-        });
-        await this.doPublish(bypassJson);
-    }
-
-    async doPublish(bypassReasonJson) {
-        this.isProcessing = true;
-
-        try {
-            await publishArticleWithAudit({
-                knowledgeArticleId: this.knowledgeArticleId,
-                articleVersionId: this.recordId,
-                bypassReasonJson: bypassReasonJson
-            });
-
-            this.dispatchEvent(
-                new ShowToastEvent({
-                    title: 'Success',
-                    message: 'Article published successfully.',
-                    variant: 'success'
-                })
-            );
-
-            this.resetState();
-        } catch (error) {
-            this.dispatchEvent(
-                new ShowToastEvent({
-                    title: 'Publish Failed',
-                    message: error.body?.message || 'Failed to publish article.',
-                    variant: 'error'
-                })
-            );
-        } finally {
-            this.isProcessing = false;
-        }
-    }
-
-    // Create Draft Version confirm — platform lightning/confirm (focus-trapped,
-    // Escape-dismissable) replaces the hand-rolled section[role="dialog"]. A
-    // dismissed / declined confirm resolves falsy and is treated as cancel.
-    async handleCreateDraft() {
-        const confirmed = await LightningConfirm.open({
-            label: 'Create Draft Version?',
-            message:
-                'This creates a new draft version of the published article so you can address the detected conflicts. The current published version stays live until the draft is published.',
-            theme: 'warning'
-        });
-        if (!confirmed) {
-            return;
-        }
-
-        this.isProcessing = true;
-
-        try {
-            const draftId = await createDraftVersion({
-                knowledgeArticleId: this.knowledgeArticleId
-            });
-
-            this.dispatchEvent(
-                new ShowToastEvent({
-                    title: 'Draft Created',
-                    message: 'A new draft version has been created. Redirecting...',
-                    variant: 'success'
-                })
-            );
-
-            this[NavigationMixin.Navigate]({
-                type: 'standard__recordPage',
-                attributes: {
-                    recordId: draftId,
-                    objectApiName: 'Knowledge__kav',
-                    actionName: 'view'
-                }
-            });
-        } catch (error) {
-            this.dispatchEvent(
-                new ShowToastEvent({
-                    title: 'Error',
-                    message: error.body?.message || 'Failed to create draft version.',
-                    variant: 'error'
-                })
-            );
-        } finally {
-            this.isProcessing = false;
-        }
-    }
-
-    handleBypassReasonChange(event) {
-        this.bypassReason = event.detail.value;
-    }
-
-    handleCancel() {
-        this.resetState();
-    }
-
-    resetState() {
-        this.isProcessing = false;
-        this.isClean = false;
-        this.hasConflicts = false;
-        this.hasError = false;
-        this.errorMessage = '';
-        this.conflicts = [];
-        this.bypassReason = '';
-    }
-
-    getBadgeClass(conflictType) {
-        switch (conflictType) {
-            case 'Duplicate':
-                return 'slds-badge_inverse';
-            case 'Contradiction':
-                return 'slds-badge_error';
-            default:
-                return 'slds-badge_warning';
-        }
     }
 }

@@ -61,16 +61,149 @@ public virtual with sharing class KBScorerBase implements KBScorable {
         return 'Base';
     }
 
+    // ==================== LLM Seam ====================
+    // A dimension opts into LLM scoring by overriding scoringTemplateName() (and
+    // evaluationType()). enhanceWithLLM() below then drives the whole call for
+    // it — assemble inputs → evaluateArticle → merge → set score — so the three
+    // LLM scorers no longer each carry a near-identical enhanceWithLLM override.
+
     /**
-     * Dimension-specific LLM enhancement. Default is a no-op; each scorer that
-     * uses LLM overrides this and calls the appropriate PromptTemplateService
-     * method, then merges via mergeLlmResult().
+     * The GenAI prompt template this dimension scores against (e.g.
+     * 'Evaluate_Structure'). null → this dimension does not call the LLM
+     * (deterministic dimensions, or the base class itself); enhanceWithLLM is a
+     * no-op passthrough in that case.
+     */
+    protected virtual String scoringTemplateName() {
+        return null;
+    }
+
+    /**
+     * The evaluation type passed to the response parser and used in the failure
+     * message (e.g. 'structure' → "Structure evaluation failed: …").
+     */
+    protected virtual String evaluationType() {
+        return null;
+    }
+
+    /**
+     * The body content sent to the LLM as Input:Content. Default strips HTML
+     * (Clarity / Completeness read plain text); Structure overrides this to send
+     * the RAW markup so it can judge headings/lists/tables.
+     */
+    protected virtual String llmContent(KBAssessmentModels.ArticleWrapper article) {
+        return article == null ? null : KBAssessmentUtils.stripHtml(article.content);
+    }
+
+    /**
+     * Extra Input:* entries a dimension wants to thread into the prompt beyond
+     * Title / Summary / Content — e.g. the multilingual Input:Language directive.
+     * Default is none. Entries here are passed through verbatim (Content
+     * truncation is applied only to Input:Content by evaluateArticle).
+     */
+    protected virtual Map<String, String> extraLlmInputs(KBAssessmentModels.ArticleWrapper article) {
+        return new Map<String, String>();
+    }
+
+    /**
+     * Shared LLM enhancement for every scoring dimension. When the dimension has
+     * a template wired, this assembles the inputs, calls the LLM through the
+     * PromptTemplateService seam, and — on success — merges the LLM feedback
+     * (issueAnalyses-preferred so per-issue impact rides along; items surfaced
+     * verbatim) and lets the LLM's 0-100 score become the dimension score.
+     *
+     * On no template, no promptService, a failed/empty result, or any thrown
+     * exception it returns the deterministic result UNCHANGED (the same
+     * instance) — the caller detects the untouched null-score sentinel and
+     * applies its own fallback (counting model / baseline).
      */
     protected virtual KBAssessmentModels.DimensionScore enhanceWithLLM(
         KBAssessmentModels.DimensionScore deterministicResult,
         KBAssessmentModels.ArticleWrapper article
     ) {
-        return deterministicResult;
+        if (this.promptService == null || String.isBlank(scoringTemplateName())) {
+            return deterministicResult;
+        }
+        try {
+            PromptTemplateService.LLMEvaluationResult llmResult =
+                this.promptService.evaluateArticle(
+                    scoringTemplateName(),
+                    assembleLlmInputs(article),
+                    evaluationType()
+                );
+
+            if (llmResult == null || !llmResult.success) {
+                return deterministicResult;
+            }
+
+            // Prefer the parallel issueAnalyses list so impact emitted by the
+            // prompt template rides into the analysis records; fall back to plain
+            // issue strings only when the LLM didn't emit per-issue severity
+            // (older response shape, defensive). Items surface verbatim.
+            Set<String> existingIssues = new Set<String>(deterministicResult.issues);
+            if (llmResult.issueAnalyses != null && !llmResult.issueAnalyses.isEmpty()) {
+                for (KBAssessmentModels.IssueAnalysis ia : llmResult.issueAnalyses) {
+                    if (ia == null || String.isBlank(ia.text)) continue;
+                    if (existingIssues.contains(ia.text)) continue;
+                    deterministicResult.addIssue(ia.text, ia.impact, ia.effort, ia.priority);
+                }
+            } else if (llmResult.issues != null) {
+                for (String issue : llmResult.issues) {
+                    if (String.isNotBlank(issue) && !existingIssues.contains(issue)) {
+                        deterministicResult.addIssue(issue);
+                    }
+                }
+            }
+
+            Set<String> existingStrengths = new Set<String>(deterministicResult.strengths);
+            for (String strength : llmResult.strengths) {
+                if (String.isNotBlank(strength) && !existingStrengths.contains(strength)) {
+                    deterministicResult.strengths.add(strength);
+                }
+            }
+
+            // LLM score wins — it has already judged severity in context.
+            deterministicResult.score = llmResult.score;
+            return deterministicResult;
+        } catch (Exception e) {
+            System.debug(LoggingLevel.ERROR, getDimensionName() + ' LLM enhancement failed: ' + e.getMessage());
+            return deterministicResult;
+        }
+    }
+
+    /**
+     * Assembles the Input:* map for evaluateArticle: Title / Summary as their own
+     * blank-guarded inputs (never folded into the body), Content from the
+     * dimension's llmContent() seam, plus any extraLlmInputs(). Content
+     * truncation is owned by PromptTemplateService.evaluateArticle.
+     */
+    private Map<String, String> assembleLlmInputs(KBAssessmentModels.ArticleWrapper article) {
+        String title = article == null ? null : article.title;
+        String summary = article == null ? null : article.summary;
+        String language = article == null ? null : article.language;
+
+        Map<String, String> inputs = new Map<String, String>{
+            'Input:Title' => String.isBlank(title) ? '' : title,
+            'Input:Summary' => String.isBlank(summary) ? '' : summary,
+            'Input:Content' => llmContent(article)
+        };
+        // Input:Language drives the per-language scoring directive so a
+        // non-English article is judged (and its issues/strengths written)
+        // in its own language. If the wrapper carries no language, we EMIT
+        // AN EMPTY STRING rather than hardcoding 'en_US' — the templates
+        // interpret an empty Input:Language as "unknown" (their LANGUAGE
+        // DIRECTIVE degrades gracefully — the LLM picks up cues from the
+        // Title/Summary/Content). The old default silently mislabelled every
+        // article without a Language field (or built from a projection that
+        // omitted it) as English, contradicting the P1 multilingual promise.
+        // Callers that KNOW the language should populate ArticleWrapper.language;
+        // omitting it means "don't assert a language", not "assume English".
+        inputs.put('Input:Language', String.isBlank(language) ? '' : language);
+
+        Map<String, String> extras = extraLlmInputs(article);
+        if (extras != null) {
+            inputs.putAll(extras);
+        }
+        return inputs;
     }
 
     /**

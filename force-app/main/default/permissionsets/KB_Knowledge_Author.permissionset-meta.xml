@@ -13,6 +13,22 @@
         <viewAllFields>false</viewAllFields>
         <viewAllRecords>false</viewAllRecords>
     </objectPermissions>
+    <!--
+      Field-level Read+Edit on the Knowledge__kav custom fields THE APP ITSELF
+      SHIPS. Not the same as viewAllFields=true (which CLAUDE.md warns against
+      as customer-visibility overreach) — this is targeted FLS on fields we
+      deploy alongside this permset, needed by:
+        - `Tier4ConsolidationAction` Golden-Record merges (Merged_Into__c
+          links the merged loser to its survivor).
+      Customer-specific Knowledge fields (Description__c, LongDescription__c,
+      any other content-mapping target the customer selects in Setup) remain
+      the customer's responsibility to wire up per the shipped guidance.
+    -->
+    <fieldPermissions>
+        <editable>true</editable>
+        <field>Knowledge__kav.Merged_Into__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
     <userPermissions>
         <enabled>true</enabled>
         <name>EditKnowledge</name>

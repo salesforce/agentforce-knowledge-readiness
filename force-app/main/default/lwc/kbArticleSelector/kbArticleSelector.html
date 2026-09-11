@@ -209,6 +209,64 @@
             </template>
         </div>
 
+        <!-- Data-category filter: a compact dropdown trigger (like Article Type)
+             that opens the in-use category tree in a click-away popover, so the
+             filter stays one line tall until the user opens it. -->
+        <template lwc:if={hasDataCategories}>
+            <div class="slds-form-element slds-m-bottom_medium category-dropdown slds-is-relative">
+                <label class="slds-form-element__label">Data Categories</label>
+                <div class="slds-form-element__control">
+                    <button
+                        type="button"
+                        class="slds-button slds-button_neutral category-dropdown__trigger slds-grid slds-grid_align-spread slds-grid_vertical-align-center"
+                        aria-haspopup="true"
+                        aria-expanded={isCategoryDropdownOpen}
+                        onclick={toggleCategoryDropdown}>
+                        <span class="slds-truncate">{categoryTriggerLabel}</span>
+                        <lightning-icon icon-name="utility:chevrondown" size="xx-small" class="slds-m-left_x-small"></lightning-icon>
+                    </button>
+                </div>
+                <template lwc:if={isCategoryDropdownOpen}>
+                    <!-- click-away backdrop -->
+                    <div class="category-dropdown__backdrop" onclick={closeCategoryDropdown}></div>
+                    <div class="slds-dropdown slds-dropdown_left category-dropdown__panel">
+                        <div class="slds-grid slds-grid_align-spread slds-grid_vertical-align-center slds-p-horizontal_small slds-p-vertical_x-small slds-border_bottom">
+                            <span class="slds-text-title_caps">Filter by category</span>
+                            <lightning-button
+                                label="Clear"
+                                variant="base"
+                                onclick={handleClearCategories}
+                                disabled={clearCategoriesDisabled}>
+                            </lightning-button>
+                        </div>
+                        <div class="category-tree-scroll">
+                            <lightning-accordion allow-multiple-sections-open>
+                                <template for:each={categoryGroups} for:item="group">
+                                    <lightning-accordion-section
+                                        key={group.name}
+                                        name={group.name}
+                                        label={group.displayLabel}>
+                                        <template for:each={group.rows} for:item="row">
+                                            <div key={row.key} class={row.indentClass} style={row.indentStyle}>
+                                                <lightning-input
+                                                    type="checkbox"
+                                                    label={row.checkboxLabel}
+                                                    checked={row.checked}
+                                                    data-group={row.groupName}
+                                                    data-name={row.name}
+                                                    onchange={handleCategoryToggle}>
+                                                </lightning-input>
+                                            </div>
+                                        </template>
+                                    </lightning-accordion-section>
+                                </template>
+                            </lightning-accordion>
+                        </div>
+                    </div>
+                </template>
+            </div>
+        </template>
+
         <!-- Selection summary + count -->
         <div class="slds-grid slds-grid_align-spread slds-m-bottom_medium">
             <div>

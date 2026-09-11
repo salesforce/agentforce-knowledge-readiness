@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomObject xmlns="http://soap.sforce.com/2006/04/metadata">
+    <description>Catalog of prompt/LLM-input strings localized by article language. Each record is one (Text_Key__c, Language_Code__c) pair. Resolved via KBLocalizedText.get(key, languageCode) with a two-level English fallback: a missing (key, language) pair falls back to the same key's English ('en') record, and a totally-absent key returns null (caller supplies its own default). Lets AI-Fix (and any future flow) send the model a directive written in the article's own language without a second translation call.</description>
+    <label>KB Localized Prompt Text</label>
+    <pluralLabel>KB Localized Prompt Texts</pluralLabel>
+    <visibility>Public</visibility>
+</CustomObject>
